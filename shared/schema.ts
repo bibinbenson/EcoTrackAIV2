@@ -1,6 +1,7 @@
 import { pgTable, text, serial, integer, boolean, timestamp, real, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { relations } from "drizzle-orm";
 
 // User model
 export const users = pgTable("users", {
@@ -133,6 +134,74 @@ export const educationalResources = pgTable("educational_resources", {
 export const insertEducationalResourceSchema = createInsertSchema(educationalResources).omit({
   id: true
 });
+
+// Relation definitions
+export const usersRelations = relations(users, ({ many }) => ({
+  activities: many(activities),
+  userAchievements: many(userAchievements),
+  offsetPurchases: many(offsetPurchases)
+}));
+
+export const categoriesRelations = relations(categories, ({ many }) => ({
+  activities: many(activities),
+  sustainabilityTips: many(sustainabilityTips),
+  educationalResources: many(educationalResources)
+}));
+
+export const activitiesRelations = relations(activities, ({ one }) => ({
+  user: one(users, {
+    fields: [activities.userId],
+    references: [users.id]
+  }),
+  category: one(categories, {
+    fields: [activities.categoryId],
+    references: [categories.id]
+  })
+}));
+
+export const achievementsRelations = relations(achievements, ({ many }) => ({
+  userAchievements: many(userAchievements)
+}));
+
+export const userAchievementsRelations = relations(userAchievements, ({ one }) => ({
+  user: one(users, {
+    fields: [userAchievements.userId],
+    references: [users.id]
+  }),
+  achievement: one(achievements, {
+    fields: [userAchievements.achievementId],
+    references: [achievements.id]
+  })
+}));
+
+export const sustainabilityTipsRelations = relations(sustainabilityTips, ({ one }) => ({
+  category: one(categories, {
+    fields: [sustainabilityTips.categoryId],
+    references: [categories.id]
+  })
+}));
+
+export const offsetProjectsRelations = relations(offsetProjects, ({ many }) => ({
+  offsetPurchases: many(offsetPurchases)
+}));
+
+export const offsetPurchasesRelations = relations(offsetPurchases, ({ one }) => ({
+  user: one(users, {
+    fields: [offsetPurchases.userId],
+    references: [users.id]
+  }),
+  project: one(offsetProjects, {
+    fields: [offsetPurchases.projectId],
+    references: [offsetProjects.id]
+  })
+}));
+
+export const educationalResourcesRelations = relations(educationalResources, ({ one }) => ({
+  category: one(categories, {
+    fields: [educationalResources.categoryId],
+    references: [categories.id]
+  })
+}));
 
 // Type exports
 export type User = typeof users.$inferSelect;

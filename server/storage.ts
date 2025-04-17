@@ -9,6 +9,8 @@ import {
   offsetPurchases, OffsetPurchase, InsertOffsetPurchase,
   educationalResources, EducationalResource, InsertEducationalResource
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, and, desc, between, count, sum } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -533,4 +535,332 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export class DatabaseStorage implements IStorage {
+  // User operations
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(insertUser).returning();
+    return user;
+  }
+
+  async updateUserScore(id: number, newScore: number): Promise<User | undefined> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ score: newScore })
+      .where(eq(users.id, id))
+      .returning();
+    return updatedUser;
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return db.select().from(users);
+  }
+
+  async getTopUsers(limit: number): Promise<User[]> {
+    return db
+      .select()
+      .from(users)
+      .orderBy(desc(users.score))
+      .limit(limit);
+  }
+
+  // Category operations
+  async getCategory(id: number): Promise<Category | undefined> {
+    const [category] = await db.select().from(categories).where(eq(categories.id, id));
+    return category;
+  }
+
+  async getAllCategories(): Promise<Category[]> {
+    return db.select().from(categories);
+  }
+
+  async createCategory(category: InsertCategory): Promise<Category> {
+    const [newCategory] = await db.insert(categories).values(category).returning();
+    return newCategory;
+  }
+
+  // Activity operations
+  async getActivity(id: number): Promise<Activity | undefined> {
+    const [activity] = await db.select().from(activities).where(eq(activities.id, id));
+    return activity;
+  }
+
+  async getUserActivities(userId: number): Promise<Activity[]> {
+    return db
+      .select()
+      .from(activities)
+      .where(eq(activities.userId, userId));
+  }
+
+  async getRecentUserActivities(userId: number, limit: number): Promise<Activity[]> {
+    return db
+      .select()
+      .from(activities)
+      .where(eq(activities.userId, userId))
+      .orderBy(desc(activities.date))
+      .limit(limit);
+  }
+
+  async createActivity(activity: InsertActivity): Promise<Activity> {
+    const [newActivity] = await db.insert(activities).values(activity).returning();
+    return newActivity;
+  }
+
+  async getUserCarbonFootprint(userId: number, startDate?: Date, endDate?: Date): Promise<number> {
+    // Base query builder with user filter
+    let queryBuilder = db
+      .select({ total: sum(activities.carbonAmount) })
+      .from(activities)
+      .where(eq(activities.userId, userId));
+    
+    // Add date constraints if provided
+    if (startDate && endDate) {
+      const result = await queryBuilder
+        .where(between(activities.date, startDate, endDate));
+      return Number(result[0]?.total) || 0;
+    } else if (startDate) {
+      const result = await queryBuilder
+        .where(activities.date >= startDate as any);
+      return Number(result[0]?.total) || 0;
+    } else if (endDate) {
+      const result = await queryBuilder
+        .where(activities.date <= endDate as any);
+      return Number(result[0]?.total) || 0;
+    }
+    
+    // No date constraints
+    const result = await queryBuilder;
+    return Number(result[0]?.total) || 0;
+  }
+
+  async getUserCarbonByCategory(
+    userId: number, 
+    startDate?: Date, 
+    endDate?: Date
+  ): Promise<{categoryId: number, totalCarbon: number}[]> {
+    // Base query builder
+    let queryBuilder = db
+      .select({
+        categoryId: activities.categoryId,
+        totalCarbon: sum(activities.carbonAmount)
+      })
+      .from(activities)
+      .where(eq(activities.userId, userId))
+      .groupBy(activities.categoryId);
+    
+    // Add date constraints if provided
+    if (startDate && endDate) {
+      const result = await queryBuilder
+        .where(between(activities.date, startDate, endDate));
+      return result.map(item => ({
+        categoryId: item.categoryId,
+        totalCarbon: Number(item.totalCarbon) || 0
+      }));
+    } else if (startDate) {
+      const result = await queryBuilder
+        .where(activities.date >= startDate as any);
+      return result.map(item => ({
+        categoryId: item.categoryId,
+        totalCarbon: Number(item.totalCarbon) || 0
+      }));
+    } else if (endDate) {
+      const result = await queryBuilder
+        .where(activities.date <= endDate as any);
+      return result.map(item => ({
+        categoryId: item.categoryId,
+        totalCarbon: Number(item.totalCarbon) || 0
+      }));
+    }
+    
+    // No date constraints
+    const result = await queryBuilder;
+    return result.map(item => ({
+      categoryId: item.categoryId,
+      totalCarbon: Number(item.totalCarbon) || 0
+    }));
+  }
+
+  // Achievement operations
+  async getAchievement(id: number): Promise<Achievement | undefined> {
+    const [achievement] = await db
+      .select()
+      .from(achievements)
+      .where(eq(achievements.id, id));
+    return achievement;
+  }
+
+  async getAllAchievements(): Promise<Achievement[]> {
+    return db.select().from(achievements);
+  }
+
+  async createAchievement(achievement: InsertAchievement): Promise<Achievement> {
+    const [newAchievement] = await db
+      .insert(achievements)
+      .values(achievement)
+      .returning();
+    return newAchievement;
+  }
+
+  // User Achievement operations
+  async getUserAchievement(userId: number, achievementId: number): Promise<UserAchievement | undefined> {
+    const [userAchievement] = await db
+      .select()
+      .from(userAchievements)
+      .where(
+        and(
+          eq(userAchievements.userId, userId),
+          eq(userAchievements.achievementId, achievementId)
+        )
+      );
+    return userAchievement;
+  }
+
+  async getUserAchievements(userId: number): Promise<UserAchievement[]> {
+    return db
+      .select()
+      .from(userAchievements)
+      .where(eq(userAchievements.userId, userId));
+  }
+
+  async createUserAchievement(userAchievement: InsertUserAchievement): Promise<UserAchievement> {
+    const [newUserAchievement] = await db
+      .insert(userAchievements)
+      .values(userAchievement)
+      .returning();
+    return newUserAchievement;
+  }
+
+  async updateUserAchievementProgress(
+    userId: number, 
+    achievementId: number, 
+    progress: number, 
+    isCompleted?: boolean
+  ): Promise<UserAchievement | undefined> {
+    const data: Partial<UserAchievement> = { progress };
+    
+    if (isCompleted !== undefined) {
+      data.isCompleted = isCompleted;
+      if (isCompleted) {
+        data.dateEarned = new Date();
+      }
+    }
+    
+    const [updatedUserAchievement] = await db
+      .update(userAchievements)
+      .set(data)
+      .where(
+        and(
+          eq(userAchievements.userId, userId),
+          eq(userAchievements.achievementId, achievementId)
+        )
+      )
+      .returning();
+      
+    return updatedUserAchievement;
+  }
+
+  // Sustainability Tip operations
+  async getSustainabilityTip(id: number): Promise<SustainabilityTip | undefined> {
+    const [tip] = await db
+      .select()
+      .from(sustainabilityTips)
+      .where(eq(sustainabilityTips.id, id));
+    return tip;
+  }
+
+  async getAllSustainabilityTips(): Promise<SustainabilityTip[]> {
+    return db.select().from(sustainabilityTips);
+  }
+
+  async getTipsByCategory(categoryId: number): Promise<SustainabilityTip[]> {
+    return db
+      .select()
+      .from(sustainabilityTips)
+      .where(eq(sustainabilityTips.categoryId, categoryId));
+  }
+
+  async createSustainabilityTip(tip: InsertSustainabilityTip): Promise<SustainabilityTip> {
+    const [newTip] = await db
+      .insert(sustainabilityTips)
+      .values(tip)
+      .returning();
+    return newTip;
+  }
+
+  // Offset Project operations
+  async getOffsetProject(id: number): Promise<OffsetProject | undefined> {
+    const [project] = await db
+      .select()
+      .from(offsetProjects)
+      .where(eq(offsetProjects.id, id));
+    return project;
+  }
+
+  async getAllOffsetProjects(): Promise<OffsetProject[]> {
+    return db.select().from(offsetProjects);
+  }
+
+  async createOffsetProject(project: InsertOffsetProject): Promise<OffsetProject> {
+    const [newProject] = await db
+      .insert(offsetProjects)
+      .values(project)
+      .returning();
+    return newProject;
+  }
+
+  // Offset Purchase operations
+  async createOffsetPurchase(purchase: InsertOffsetPurchase): Promise<OffsetPurchase> {
+    const [newPurchase] = await db
+      .insert(offsetPurchases)
+      .values(purchase)
+      .returning();
+    return newPurchase;
+  }
+
+  async getUserOffsetPurchases(userId: number): Promise<OffsetPurchase[]> {
+    return db
+      .select()
+      .from(offsetPurchases)
+      .where(eq(offsetPurchases.userId, userId));
+  }
+
+  // Educational Resource operations
+  async getEducationalResource(id: number): Promise<EducationalResource | undefined> {
+    const [resource] = await db
+      .select()
+      .from(educationalResources)
+      .where(eq(educationalResources.id, id));
+    return resource;
+  }
+
+  async getAllEducationalResources(): Promise<EducationalResource[]> {
+    return db.select().from(educationalResources);
+  }
+
+  async getResourcesByCategory(categoryId: number): Promise<EducationalResource[]> {
+    return db
+      .select()
+      .from(educationalResources)
+      .where(eq(educationalResources.categoryId, categoryId));
+  }
+
+  async createEducationalResource(resource: InsertEducationalResource): Promise<EducationalResource> {
+    const [newResource] = await db
+      .insert(educationalResources)
+      .values(resource)
+      .returning();
+    return newResource;
+  }
+}
+
+// Export an instance of the DatabaseStorage
+export const storage = new DatabaseStorage();
