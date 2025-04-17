@@ -46,6 +46,14 @@ export const activities = pgTable("activities", {
 
 export const insertActivitySchema = createInsertSchema(activities).omit({
   id: true
+}).extend({
+  date: z.preprocess(
+    (arg) => {
+      if (typeof arg === 'string' || arg instanceof Date) return new Date(arg);
+      return undefined;
+    },
+    z.date()
+  )
 });
 
 // Achievements

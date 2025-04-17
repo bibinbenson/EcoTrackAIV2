@@ -83,10 +83,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // For simplicity, force userId to 1
       const activityData = {
-        ...insertActivitySchema.parse(req.body),
+        ...req.body,
         userId: 1
       };
-      const activity = await storage.createActivity(activityData);
+      
+      // Validate with Zod which will handle date conversion via preprocessor
+      const validatedData = insertActivitySchema.parse(activityData);
+      
+      // Create activity
+      const activity = await storage.createActivity(validatedData);
       
       // Recalculate user score after adding activity
       const totalFootprint = await storage.getUserCarbonFootprint(1);
@@ -96,6 +101,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       return res.status(201).json(activity);
     } catch (error) {
+      console.error("Error creating activity:", error);
       return res.status(400).json({ message: "Invalid activity data", error });
     }
   });
