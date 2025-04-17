@@ -43,20 +43,26 @@ export default function CategoryBreakdown({ className }: CategoryBreakdownProps)
 
   return (
     <div className={`grid grid-cols-2 sm:grid-cols-4 gap-4 ${className}`}>
-      {categoryData.map((item: any) => (
-        <div key={item.categoryId} className="text-center">
-          <CategoryIcon
-            category={item.category.name}
-            size={20}
-            containerClassName="h-10 w-10 mx-auto"
-            color={item.category.color}
-          />
-          <p className="mt-1 text-sm font-medium text-neutral-800">{item.category.name}</p>
-          <p className="text-neutral-600 font-mono text-xs">
-            {formatCarbonAmount(item.totalCarbon)}
-          </p>
-        </div>
-      ))}
+      {categoryData.map((item: any) => {
+        // Check if category data exists
+        const categoryName = item.category?.name || 'Unknown';
+        const categoryColor = item.category?.color || '#888888';
+        
+        return (
+          <div key={item.categoryId} className="text-center">
+            <CategoryIcon
+              category={categoryName}
+              size={20}
+              containerClassName="h-10 w-10 mx-auto"
+              color={categoryColor}
+            />
+            <p className="mt-1 text-sm font-medium text-neutral-800">{categoryName}</p>
+            <p className="text-neutral-600 font-mono text-xs">
+              {formatCarbonAmount(item.totalCarbon)}
+            </p>
+          </div>
+        );
+      })}
     </div>
   );
 }
