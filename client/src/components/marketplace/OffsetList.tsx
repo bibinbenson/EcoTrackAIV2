@@ -36,10 +36,10 @@ export default function OffsetList({ compact = false, limit }: OffsetListProps) 
   });
   
   // Extract unique project types for filter
-  const getProjectTypes = () => {
+  const getProjectTypes = (): string[] => {
     if (!projects) return [];
     const types = new Set(projects.map((p: OffsetProject) => p.projectType));
-    return Array.from(types);
+    return Array.from(types) as string[];
   };
   
   // Filter and sort projects
@@ -61,7 +61,7 @@ export default function OffsetList({ compact = false, limit }: OffsetListProps) 
     }
     
     // Apply project type filter
-    if (projectType) {
+    if (projectType && projectType !== 'all') {
       filtered = filtered.filter((p: OffsetProject) => p.projectType === projectType);
     }
     
@@ -92,12 +92,12 @@ export default function OffsetList({ compact = false, limit }: OffsetListProps) 
   // Reset all filters
   const resetFilters = () => {
     setSearchTerm("");
-    setProjectType("");
+    setProjectType("all");
     setSortBy("price-asc");
   };
   
   // Check if any filters are applied
-  const hasFilters = searchTerm !== "" || projectType !== "";
+  const hasFilters = searchTerm !== "" || (projectType !== "" && projectType !== "all");
 
   return (
     <div>
@@ -131,10 +131,10 @@ export default function OffsetList({ compact = false, limit }: OffsetListProps) 
                   </div>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Types</SelectItem>
-                  {getProjectTypes().map((type) => (
+                  <SelectItem value="all">All Types</SelectItem>
+                  {getProjectTypes().map((type: string) => (
                     <SelectItem key={type} value={type}>
-                      {type.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase())}
+                      {type.replace("_", " ").replace(/\b\w/g, (l: string) => l.toUpperCase())}
                     </SelectItem>
                   ))}
                 </SelectContent>
