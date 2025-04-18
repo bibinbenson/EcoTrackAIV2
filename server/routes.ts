@@ -682,6 +682,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/eco-rewards", async (_req: Request, res: Response) => {
+    const rewards = await storage.getAllEcoRewards();
+    return res.json(rewards);
+  });
+
   app.get("/api/user-rewards", async (req: Request, res: Response) => {
     const userId = 1; // For simplicity, use fixed user
     const userRewards = await storage.getUserRewards(userId);
@@ -705,41 +710,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     return res.json(result);
   });
-
+  
   app.post("/api/user-rewards", async (req: Request, res: Response) => {
     try {
-      // For simplicity, force userId to 1
-      const userRewardData = {
-        ...req.body,
-        userId: 1,
-        dateEarned: new Date()
-      };
+      const userId = 1; // For simplicity, use fixed user
+      const { rewardId } = req.body;
       
-      const validatedData = insertUserRewardSchema.parse(userRewardData);
-      const userReward = await storage.createUserReward(validatedData);
+      if (!rewardId) {
+        return res.status(400).json({ message: "Reward ID is required" });
+      }
+      
+      // Get the reward to check if user has enough points
+      const reward = await storage.getEcoReward(rewardId);
+      if (!reward) {
+        return res.status(404).json({ message: "Reward not found" });
+      }
+      
+      // Get user to check points
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      if (user.score < reward.pointCost) {
+        return res.status(400).json({ 
+          message: "Not enough points to earn this reward",
+          currentPoints: user.score,
+          requiredPoints: reward.pointCost
+        });
+      }
+      
+      // Create user reward
+      const userReward = await storage.createUserReward({
+        userId,
+        rewardId,
+        dateEarned: new Date(),
+        isRedeemed: false
+      });
+      
+      // Deduct points from user
+      await storage.updateUserScore(userId, user.score - reward.pointCost);
+      
       return res.status(201).json(userReward);
     } catch (error) {
-      console.error("Error creating user reward:", error);
-      return res.status(400).json({ message: "Invalid user reward data", error });
+      console.error("Error earning reward:", error);
+      return res.status(400).json({ message: "Invalid reward data", error });
     }
   });
-
+  
   app.patch("/api/user-rewards/:id/redeem", async (req: Request, res: Response) => {
     try {
       const userRewardId = parseInt(req.params.id);
-      const userId = 1; // For simplicity, use fixed user
       
-      const updatedUserReward = await storage.redeemUserReward(userRewardId, userId);
-      
-      if (!updatedUserReward) {
+      // Check if user reward exists
+      const userReward = await storage.getUserReward(userRewardId);
+      if (!userReward) {
         return res.status(404).json({ message: "User reward not found" });
       }
       
+      if (userReward.isRedeemed) {
+        return res.status(400).json({ message: "Reward already redeemed" });
+      }
+      
+      // Generate a random redemption code (in a real app, this would be more sophisticated)
+      const redemptionCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+      
+      // Update user reward
+      const updatedUserReward = await storage.redeemUserReward(userRewardId, redemptionCode);
+      
       return res.json(updatedUserReward);
     } catch (error) {
+      console.error("Error redeeming reward:", error);
       return res.status(400).json({ message: "Error redeeming reward", error });
     }
   });
+
+
 
   const httpServer = createServer(app);
   return httpServer;

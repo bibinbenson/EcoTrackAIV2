@@ -56,10 +56,7 @@ const RewardsPage = () => {
   // Mutation to earn a reward
   const earnRewardMutation = useMutation({
     mutationFn: (rewardId: number) => {
-      return apiRequest("/api/user-rewards", {
-        method: "POST",
-        body: JSON.stringify({ rewardId }),
-      });
+      return apiRequest("/api/user-rewards", "POST", { rewardId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/user-rewards"] });
@@ -81,9 +78,7 @@ const RewardsPage = () => {
   // Mutation to redeem a reward
   const redeemRewardMutation = useMutation({
     mutationFn: (userRewardId: number) => {
-      return apiRequest(`/api/user-rewards/${userRewardId}/redeem`, {
-        method: "PATCH",
-      });
+      return apiRequest(`/api/user-rewards/${userRewardId}/redeem`, "PATCH");
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/user-rewards"] });
