@@ -6,6 +6,7 @@ import {
   insertUserSchema,
   insertActivitySchema,
   insertUserAchievementSchema,
+  insertOffsetProjectSchema,
   insertOffsetPurchaseSchema,
   insertSupplierSchema,
   insertSupplierEmissionsSchema,

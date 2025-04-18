@@ -331,7 +331,35 @@ function ProjectDetails({ projectId }: { projectId: number }) {
                 </span>
               </div>
               
-              <Button className="w-full">Purchase Offset</Button>
+              <Button 
+                className="w-full" 
+                onClick={async () => {
+                  try {
+                    const response = await fetch('/api/offset-purchases', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        projectId: project.id,
+                        amount: offsetAmount,
+                        cost: totalCost
+                      }),
+                    });
+                    
+                    if (response.ok) {
+                      alert('Purchase successful! You have offset ' + offsetAmount + ' tons of CO₂.');
+                    } else {
+                      throw new Error('Failed to complete purchase');
+                    }
+                  } catch (error) {
+                    console.error('Purchase error:', error);
+                    alert('There was a problem completing your purchase. Please try again.');
+                  }
+                }}
+              >
+                Purchase Offset
+              </Button>
               
               <p className="text-xs text-neutral-500 mt-2 text-center">
                 You'll receive a certificate for your offset purchase
