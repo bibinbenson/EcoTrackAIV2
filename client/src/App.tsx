@@ -34,6 +34,7 @@ function Router() {
       <Route path="/community" component={Community} />
       <Route path="/profile" component={Profile} />
       <Route path="/goals" component={Goals} />
+      <Route path="/rewards" component={Rewards} />
       
       {/* Supply Chain Routes */}
       <Route path="/suppliers" component={Suppliers} />

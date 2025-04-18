@@ -11,6 +11,7 @@ const navItems = [
   { href: "/goals", label: "Goals" },
   { href: "/learn", label: "Learn" },
   { href: "/marketplace", label: "Marketplace" },
+  { href: "/rewards", label: "Rewards" },
   { href: "/community", label: "Community" },
 ];
 

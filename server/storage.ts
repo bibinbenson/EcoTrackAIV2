@@ -46,6 +46,19 @@ export interface IStorage {
   getAchievement(id: number): Promise<Achievement | undefined>;
   getAllAchievements(): Promise<Achievement[]>;
   createAchievement(achievement: InsertAchievement): Promise<Achievement>;
+  
+  // Eco-Reward operations
+  getEcoReward(id: number): Promise<EcoReward | undefined>;
+  getAllEcoRewards(): Promise<EcoReward[]>;
+  getActiveEcoRewards(): Promise<EcoReward[]>;
+  createEcoReward(reward: InsertEcoReward): Promise<EcoReward>;
+  
+  // User-Reward operations
+  getUserReward(id: number): Promise<UserReward | undefined>;
+  getUserRewards(userId: number): Promise<UserReward[]>;
+  getUserRedeemedRewards(userId: number): Promise<UserReward[]>;
+  createUserReward(userReward: InsertUserReward): Promise<UserReward>;
+  redeemUserReward(userRewardId: number, userId: number): Promise<UserReward | undefined>;
 
   // User Achievement operations
   getUserAchievement(userId: number, achievementId: number): Promise<UserAchievement | undefined>;
@@ -1158,6 +1171,82 @@ export class DatabaseStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db.insert(users).values(insertUser).returning();
     return user;
+  }
+  
+  // Eco-Reward operations
+  async getEcoReward(id: number): Promise<EcoReward | undefined> {
+    const [reward] = await db.select().from(ecoRewards).where(eq(ecoRewards.id, id));
+    return reward;
+  }
+  
+  async getAllEcoRewards(): Promise<EcoReward[]> {
+    return db.select().from(ecoRewards);
+  }
+  
+  async getActiveEcoRewards(): Promise<EcoReward[]> {
+    return db.select().from(ecoRewards).where(eq(ecoRewards.isActive, true));
+  }
+  
+  async createEcoReward(reward: InsertEcoReward): Promise<EcoReward> {
+    const [newReward] = await db.insert(ecoRewards).values(reward).returning();
+    return newReward;
+  }
+  
+  // User-Reward operations
+  async getUserReward(id: number): Promise<UserReward | undefined> {
+    const [userReward] = await db.select().from(userRewards).where(eq(userRewards.id, id));
+    return userReward;
+  }
+  
+  async getUserRewards(userId: number): Promise<UserReward[]> {
+    return db.select().from(userRewards).where(eq(userRewards.userId, userId));
+  }
+  
+  async getUserRedeemedRewards(userId: number): Promise<UserReward[]> {
+    return db
+      .select()
+      .from(userRewards)
+      .where(and(
+        eq(userRewards.userId, userId),
+        eq(userRewards.isRedeemed, true)
+      ));
+  }
+  
+  async createUserReward(userReward: InsertUserReward): Promise<UserReward> {
+    const [newUserReward] = await db.insert(userRewards).values(userReward).returning();
+    return newUserReward;
+  }
+  
+  async redeemUserReward(userRewardId: number, userId: number): Promise<UserReward | undefined> {
+    // Verify the reward exists and belongs to the user and is not already redeemed
+    const [userReward] = await db
+      .select()
+      .from(userRewards)
+      .where(and(
+        eq(userRewards.id, userRewardId),
+        eq(userRewards.userId, userId),
+        eq(userRewards.isRedeemed, false)
+      ));
+    
+    if (!userReward) {
+      return undefined;
+    }
+    
+    // Generate a redemption code
+    const redemptionCode = `ECO-${Math.floor(100000 + Math.random() * 900000)}`;
+    
+    // Update the user reward
+    const [updatedUserReward] = await db
+      .update(userRewards)
+      .set({
+        isRedeemed: true,
+        redeemedDate: new Date(),
+        redemptionCode
+      })
+      .where(eq(userRewards.id, userRewardId))
+      .returning();
+      
+    return updatedUserReward;
   }
 
   async updateUserScore(id: number, newScore: number): Promise<User | undefined> {
