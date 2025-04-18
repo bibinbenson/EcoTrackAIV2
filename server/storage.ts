@@ -11,7 +11,8 @@ import {
   suppliers, Supplier, InsertSupplier,
   supplierEmissions, SupplierEmission, InsertSupplierEmission,
   supplierAssessments, SupplierAssessment, InsertSupplierAssessment,
-  supplyChainRisks, SupplyChainRisk, InsertSupplyChainRisk
+  supplyChainRisks, SupplyChainRisk, InsertSupplyChainRisk,
+  carbonReductionGoals, CarbonReductionGoal, InsertCarbonReductionGoal
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, between, count, sum } from "drizzle-orm";
@@ -97,6 +98,14 @@ export interface IStorage {
   getHighPriorityRisks(): Promise<SupplyChainRisk[]>;
   createSupplyChainRisk(risk: InsertSupplyChainRisk): Promise<SupplyChainRisk>;
   updateRiskStatus(id: number, status: string): Promise<SupplyChainRisk | undefined>;
+  
+  // Carbon Reduction Goals operations
+  getCarbonReductionGoal(id: number): Promise<CarbonReductionGoal | undefined>;
+  getUserCarbonReductionGoals(userId: number): Promise<CarbonReductionGoal[]>;
+  getActiveCarbonReductionGoals(userId: number): Promise<CarbonReductionGoal[]>;
+  createCarbonReductionGoal(goal: InsertCarbonReductionGoal): Promise<CarbonReductionGoal>;
+  updateCarbonReductionGoalProgress(id: number, currentAmount: number): Promise<CarbonReductionGoal | undefined>;
+  updateCarbonReductionGoalStatus(id: number, status: string): Promise<CarbonReductionGoal | undefined>;
 }
 
 // In-memory implementation of storage
@@ -114,6 +123,7 @@ export class MemStorage implements IStorage {
   private supplierEmissions: Map<number, SupplierEmission>;
   private supplierAssessments: Map<number, SupplierAssessment>;
   private supplyChainRisks: Map<number, SupplyChainRisk>;
+  private carbonReductionGoals: Map<number, CarbonReductionGoal>;
   
   private userCurrentId: number;
   private categoryCurrentId: number;
@@ -128,6 +138,7 @@ export class MemStorage implements IStorage {
   private emissionCurrentId: number;
   private assessmentCurrentId: number;
   private riskCurrentId: number;
+  private goalCurrentId: number;
 
   constructor() {
     this.users = new Map();
@@ -143,6 +154,7 @@ export class MemStorage implements IStorage {
     this.supplierEmissions = new Map();
     this.supplierAssessments = new Map();
     this.supplyChainRisks = new Map();
+    this.carbonReductionGoals = new Map();
 
     this.userCurrentId = 1;
     this.categoryCurrentId = 1;
@@ -157,6 +169,7 @@ export class MemStorage implements IStorage {
     this.emissionCurrentId = 1;
     this.assessmentCurrentId = 1;
     this.riskCurrentId = 1;
+    this.goalCurrentId = 1;
 
     // Initialize with default data
     this.initializeDefaultData();
