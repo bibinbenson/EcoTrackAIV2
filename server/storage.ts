@@ -58,7 +58,7 @@ export interface IStorage {
   getUserRewards(userId: number): Promise<UserReward[]>;
   getUserRedeemedRewards(userId: number): Promise<UserReward[]>;
   createUserReward(userReward: InsertUserReward): Promise<UserReward>;
-  redeemUserReward(userRewardId: number, userId: number): Promise<UserReward | undefined>;
+  redeemUserReward(userRewardId: number, userId: number, customRedemptionCode?: string): Promise<UserReward | undefined>;
 
   // User Achievement operations
   getUserAchievement(userId: number, achievementId: number): Promise<UserAchievement | undefined>;
@@ -1113,47 +1113,7 @@ export class MemStorage implements IStorage {
     return userReward;
   }
 
-  async redeemUserReward(userRewardId: number, userId: number): Promise<UserReward | undefined> {
-    if (db) {
-      // Generate unique code for redeeming
-      const redemptionCode = `ECO-${Math.floor(100000 + Math.random() * 900000)}`;
-      
-      const [updatedUserReward] = await db
-        .update(userRewards)
-        .set({ 
-          isRedeemed: true, 
-          redeemedDate: new Date(),
-          redemptionCode
-        })
-        .where(and(
-          eq(userRewards.id, userRewardId),
-          eq(userRewards.userId, userId),
-          eq(userRewards.isRedeemed, false)
-        ))
-        .returning();
-      
-      return updatedUserReward;
-    }
-    
-    const userReward = await this.getUserReward(userRewardId);
-    
-    if (!userReward || userReward.userId !== userId || userReward.isRedeemed) {
-      return undefined;
-    }
-    
-    // Generate unique code for redeeming
-    const redemptionCode = `ECO-${Math.floor(100000 + Math.random() * 900000)}`;
-    
-    const updatedUserReward: UserReward = {
-      ...userReward,
-      isRedeemed: true,
-      redeemedDate: new Date(),
-      redemptionCode
-    };
-    
-    this.userRewards.set(userRewardId, updatedUserReward);
-    return updatedUserReward;
-  }
+
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1217,7 +1177,7 @@ export class DatabaseStorage implements IStorage {
     return newUserReward;
   }
   
-  async redeemUserReward(userRewardId: number, userId: number): Promise<UserReward | undefined> {
+  async redeemUserReward(userRewardId: number, userId: number, customRedemptionCode?: string): Promise<UserReward | undefined> {
     // Verify the reward exists and belongs to the user and is not already redeemed
     const [userReward] = await db
       .select()
@@ -1232,8 +1192,8 @@ export class DatabaseStorage implements IStorage {
       return undefined;
     }
     
-    // Generate a redemption code
-    const redemptionCode = `ECO-${Math.floor(100000 + Math.random() * 900000)}`;
+    // Generate a redemption code or use provided code
+    const redemptionCode = customRedemptionCode || `ECO-${Math.floor(100000 + Math.random() * 900000)}`;
     
     // Update the user reward
     const [updatedUserReward] = await db

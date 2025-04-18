@@ -776,7 +776,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const redemptionCode = Math.random().toString(36).substring(2, 10).toUpperCase();
       
       // Update user reward
-      const updatedUserReward = await storage.redeemUserReward(userRewardId, redemptionCode);
+      const userId = 1; // For simplicity, use fixed user
+      const updatedUserReward = await storage.redeemUserReward(userRewardId, userId, redemptionCode);
       
       return res.json(updatedUserReward);
     } catch (error) {
