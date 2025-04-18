@@ -102,12 +102,12 @@ export default function CarbonCalculator() {
     defaultValues: {
       description: "",
       transportType: "car",
-      distance: 0,
+      distance: 1, // Changed from 0 to 1 to meet validation requirements
       distanceUnit: "km",
       carType: "medium",
       flightType: "domestic",
       housingType: "electricity",
-      amount: 0,
+      amount: 1, // Changed from 0 to 1 to meet validation requirements
       unit: "kWh",
       heatingType: "oil",
       foodType: "beef",
@@ -197,12 +197,12 @@ export default function CarbonCalculator() {
     form.reset({
       description: "",
       transportType: "car",
-      distance: 0,
+      distance: 1, // Changed from 0 to 1 to meet validation requirements
       distanceUnit: "km",
       carType: "medium",
       flightType: "domestic",
       housingType: "electricity",
-      amount: 0,
+      amount: 1, // Changed from 0 to 1 to meet validation requirements
       unit: "kWh",
       heatingType: "oil",
       foodType: "beef",
@@ -247,8 +247,23 @@ export default function CarbonCalculator() {
         description: `You added ${carbonEstimate?.toFixed(2)} kg of CO2e to your carbon footprint.`,
       });
       
-      // Reset form
-      form.reset();
+      // Reset form with valid default values
+      form.reset({
+        description: "",
+        transportType: "car",
+        distance: 1,
+        distanceUnit: "km",
+        carType: "medium",
+        flightType: "domestic",
+        housingType: "electricity",
+        amount: 1,
+        unit: "kWh",
+        heatingType: "oil",
+        foodType: "beef",
+        goodsType: "clothing",
+        subType: "",
+        quantity: 1
+      });
       setCarbonEstimate(null);
       
       // Invalidate relevant queries
