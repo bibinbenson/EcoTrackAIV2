@@ -7,7 +7,11 @@ import {
   sustainabilityTips, SustainabilityTip, InsertSustainabilityTip,
   offsetProjects, OffsetProject, InsertOffsetProject,
   offsetPurchases, OffsetPurchase, InsertOffsetPurchase,
-  educationalResources, EducationalResource, InsertEducationalResource
+  educationalResources, EducationalResource, InsertEducationalResource,
+  suppliers, Supplier, InsertSupplier,
+  supplierEmissions, SupplierEmission, InsertSupplierEmission,
+  supplierAssessments, SupplierAssessment, InsertSupplierAssessment,
+  supplyChainRisks, SupplyChainRisk, InsertSupplyChainRisk
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, between, count, sum } from "drizzle-orm";
@@ -106,6 +110,10 @@ export class MemStorage implements IStorage {
   private offsetProjects: Map<number, OffsetProject>;
   private offsetPurchases: Map<number, OffsetPurchase>;
   private educationalResources: Map<number, EducationalResource>;
+  private suppliers: Map<number, Supplier>;
+  private supplierEmissions: Map<number, SupplierEmission>;
+  private supplierAssessments: Map<number, SupplierAssessment>;
+  private supplyChainRisks: Map<number, SupplyChainRisk>;
   
   private userCurrentId: number;
   private categoryCurrentId: number;
@@ -116,6 +124,10 @@ export class MemStorage implements IStorage {
   private projectCurrentId: number;
   private purchaseCurrentId: number;
   private resourceCurrentId: number;
+  private supplierCurrentId: number;
+  private emissionCurrentId: number;
+  private assessmentCurrentId: number;
+  private riskCurrentId: number;
 
   constructor() {
     this.users = new Map();
@@ -127,6 +139,10 @@ export class MemStorage implements IStorage {
     this.offsetProjects = new Map();
     this.offsetPurchases = new Map();
     this.educationalResources = new Map();
+    this.suppliers = new Map();
+    this.supplierEmissions = new Map();
+    this.supplierAssessments = new Map();
+    this.supplyChainRisks = new Map();
 
     this.userCurrentId = 1;
     this.categoryCurrentId = 1;
@@ -137,6 +153,10 @@ export class MemStorage implements IStorage {
     this.projectCurrentId = 1;
     this.purchaseCurrentId = 1;
     this.resourceCurrentId = 1;
+    this.supplierCurrentId = 1;
+    this.emissionCurrentId = 1;
+    this.assessmentCurrentId = 1;
+    this.riskCurrentId = 1;
 
     // Initialize with default data
     this.initializeDefaultData();
@@ -560,6 +580,195 @@ export class MemStorage implements IStorage {
     this.educationalResources.set(id, resource);
     return resource;
   }
+
+  // Supplier operations
+  async getSupplier(id: number): Promise<Supplier | undefined> {
+    return this.suppliers.get(id);
+  }
+
+  async getAllSuppliers(): Promise<Supplier[]> {
+    return Array.from(this.suppliers.values())
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  async createSupplier(supplier: InsertSupplier): Promise<Supplier> {
+    const id = this.supplierCurrentId++;
+    const newSupplier: Supplier = { 
+      ...supplier, 
+      id, 
+      createdAt: new Date(), 
+      updatedAt: new Date()
+    };
+    this.suppliers.set(id, newSupplier);
+    return newSupplier;
+  }
+
+  async updateSupplier(id: number, data: Partial<InsertSupplier>): Promise<Supplier | undefined> {
+    const supplier = await this.getSupplier(id);
+    if (!supplier) return undefined;
+    
+    const updatedSupplier = { 
+      ...supplier, 
+      ...data, 
+      updatedAt: new Date() 
+    };
+    this.suppliers.set(id, updatedSupplier);
+    return updatedSupplier;
+  }
+
+  async deleteSupplier(id: number): Promise<boolean> {
+    if (!this.suppliers.has(id)) return false;
+    return this.suppliers.delete(id);
+  }
+  
+  // Supplier Emissions operations
+  async getSupplierEmission(id: number): Promise<SupplierEmission | undefined> {
+    return this.supplierEmissions.get(id);
+  }
+
+  async getSupplierEmissions(supplierId: number): Promise<SupplierEmission[]> {
+    return Array.from(this.supplierEmissions.values())
+      .filter(emission => emission.supplierId === supplierId)
+      .sort((a, b) => {
+        if (a.year !== b.year) return b.year - a.year;
+        return b.quarter - a.quarter;
+      });
+  }
+
+  async getEmissionsByYear(year: number): Promise<{supplierId: number, totalScope1: number, totalScope2: number, totalScope3: number}[]> {
+    // Group emissions by supplierId
+    const emissionsBySupplier = new Map<number, {totalScope1: number, totalScope2: number, totalScope3: number}>();
+    
+    Array.from(this.supplierEmissions.values())
+      .filter(emission => emission.year === year)
+      .forEach(emission => {
+        const supplierId = emission.supplierId;
+        const current = emissionsBySupplier.get(supplierId) || {totalScope1: 0, totalScope2: 0, totalScope3: 0};
+        
+        emissionsBySupplier.set(supplierId, {
+          totalScope1: current.totalScope1 + (emission.scope1Emissions || 0),
+          totalScope2: current.totalScope2 + (emission.scope2Emissions || 0),
+          totalScope3: current.totalScope3 + (emission.scope3Emissions || 0)
+        });
+      });
+    
+    return Array.from(emissionsBySupplier.entries()).map(([supplierId, totals]) => ({
+      supplierId,
+      ...totals
+    }));
+  }
+
+  async createSupplierEmission(emission: InsertSupplierEmission): Promise<SupplierEmission> {
+    const id = this.emissionCurrentId++;
+    const newEmission: SupplierEmission = { 
+      ...emission, 
+      id, 
+      createdAt: new Date(), 
+      updatedAt: new Date() 
+    };
+    this.supplierEmissions.set(id, newEmission);
+    return newEmission;
+  }
+
+  async getTotalSupplyChainEmissions(startDate?: Date, endDate?: Date): Promise<number> {
+    let total = 0;
+    
+    Array.from(this.supplierEmissions.values())
+      .forEach(emission => {
+        total += (emission.scope1Emissions || 0) + 
+                 (emission.scope2Emissions || 0) +
+                 (emission.scope3Emissions || 0);
+      });
+    
+    return total;
+  }
+
+  // Supplier Assessment operations
+  async getSupplierAssessment(id: number): Promise<SupplierAssessment | undefined> {
+    return this.supplierAssessments.get(id);
+  }
+
+  async getSupplierAssessments(supplierId: number): Promise<SupplierAssessment[]> {
+    return Array.from(this.supplierAssessments.values())
+      .filter(assessment => assessment.supplierId === supplierId)
+      .sort((a, b) => new Date(b.assessmentDate).getTime() - new Date(a.assessmentDate).getTime());
+  }
+
+  async createSupplierAssessment(assessment: InsertSupplierAssessment): Promise<SupplierAssessment> {
+    const id = this.assessmentCurrentId++;
+    const newAssessment: SupplierAssessment = { 
+      ...assessment, 
+      id, 
+      createdAt: new Date(), 
+      updatedAt: new Date() 
+    };
+    this.supplierAssessments.set(id, newAssessment);
+    return newAssessment;
+  }
+
+  async updateAssessmentStatus(id: number, status: string): Promise<SupplierAssessment | undefined> {
+    const assessment = await this.getSupplierAssessment(id);
+    if (!assessment) return undefined;
+    
+    const updatedAssessment = { 
+      ...assessment, 
+      status, 
+      updatedAt: new Date() 
+    };
+    this.supplierAssessments.set(id, updatedAssessment);
+    return updatedAssessment;
+  }
+
+  // Supply Chain Risk operations
+  async getSupplyChainRisk(id: number): Promise<SupplyChainRisk | undefined> {
+    return this.supplyChainRisks.get(id);
+  }
+
+  async getSupplierRisks(supplierId: number): Promise<SupplyChainRisk[]> {
+    return Array.from(this.supplyChainRisks.values())
+      .filter(risk => risk.supplierId === supplierId)
+      .sort((a, b) => {
+        const riskLevelPriority: Record<string, number> = {high: 3, medium: 2, low: 1};
+        const aLevel = riskLevelPriority[a.riskLevel] || 0;
+        const bLevel = riskLevelPriority[b.riskLevel] || 0;
+        return bLevel - aLevel;
+      });
+  }
+
+  async getHighPriorityRisks(): Promise<SupplyChainRisk[]> {
+    return Array.from(this.supplyChainRisks.values())
+      .filter(risk => risk.riskLevel === 'high')
+      .sort((a, b) => {
+        if (!a.dueDate) return 1;
+        if (!b.dueDate) return -1;
+        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+      });
+  }
+
+  async createSupplyChainRisk(risk: InsertSupplyChainRisk): Promise<SupplyChainRisk> {
+    const id = this.riskCurrentId++;
+    const newRisk: SupplyChainRisk = { 
+      ...risk, 
+      id, 
+      createdAt: new Date(), 
+      updatedAt: new Date() 
+    };
+    this.supplyChainRisks.set(id, newRisk);
+    return newRisk;
+  }
+
+  async updateRiskStatus(id: number, status: string): Promise<SupplyChainRisk | undefined> {
+    const risk = await this.getSupplyChainRisk(id);
+    if (!risk) return undefined;
+    
+    const updatedRisk = { 
+      ...risk, 
+      status, 
+      updatedAt: new Date() 
+    };
+    this.supplyChainRisks.set(id, updatedRisk);
+    return updatedRisk;
+  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -886,6 +1095,188 @@ export class DatabaseStorage implements IStorage {
       .values(resource)
       .returning();
     return newResource;
+  }
+
+  // Supplier operations
+  async getSupplier(id: number): Promise<Supplier | undefined> {
+    const [supplier] = await db.select().from(suppliers).where(eq(suppliers.id, id));
+    return supplier;
+  }
+
+  async getAllSuppliers(): Promise<Supplier[]> {
+    return db.select().from(suppliers).orderBy(suppliers.name);
+  }
+
+  async createSupplier(supplier: InsertSupplier): Promise<Supplier> {
+    const [newSupplier] = await db
+      .insert(suppliers)
+      .values({
+        ...supplier,
+        updatedAt: new Date()
+      })
+      .returning();
+    return newSupplier;
+  }
+
+  async updateSupplier(id: number, data: Partial<InsertSupplier>): Promise<Supplier | undefined> {
+    const [updatedSupplier] = await db
+      .update(suppliers)
+      .set({
+        ...data,
+        updatedAt: new Date()
+      })
+      .where(eq(suppliers.id, id))
+      .returning();
+    return updatedSupplier;
+  }
+
+  async deleteSupplier(id: number): Promise<boolean> {
+    try {
+      await db.delete(suppliers).where(eq(suppliers.id, id));
+      return true;
+    } catch (error) {
+      console.error("Error deleting supplier:", error);
+      return false;
+    }
+  }
+
+  // Supplier Emissions operations
+  async getSupplierEmission(id: number): Promise<SupplierEmission | undefined> {
+    const [emission] = await db.select().from(supplierEmissions).where(eq(supplierEmissions.id, id));
+    return emission;
+  }
+
+  async getSupplierEmissions(supplierId: number): Promise<SupplierEmission[]> {
+    return db
+      .select()
+      .from(supplierEmissions)
+      .where(eq(supplierEmissions.supplierId, supplierId))
+      .orderBy(desc(supplierEmissions.year), desc(supplierEmissions.quarter));
+  }
+
+  async getEmissionsByYear(year: number): Promise<{supplierId: number, totalScope1: number, totalScope2: number, totalScope3: number}[]> {
+    const result = await db
+      .select({
+        supplierId: supplierEmissions.supplierId,
+        totalScope1: sum(supplierEmissions.scope1Emissions),
+        totalScope2: sum(supplierEmissions.scope2Emissions),
+        totalScope3: sum(supplierEmissions.scope3Emissions)
+      })
+      .from(supplierEmissions)
+      .where(eq(supplierEmissions.year, year))
+      .groupBy(supplierEmissions.supplierId);
+    
+    return result.map(item => ({
+      supplierId: item.supplierId,
+      totalScope1: Number(item.totalScope1) || 0,
+      totalScope2: Number(item.totalScope2) || 0,
+      totalScope3: Number(item.totalScope3) || 0
+    }));
+  }
+
+  async createSupplierEmission(emission: InsertSupplierEmission): Promise<SupplierEmission> {
+    const [newEmission] = await db
+      .insert(supplierEmissions)
+      .values({
+        ...emission,
+        updatedAt: new Date()
+      })
+      .returning();
+    return newEmission;
+  }
+
+  async getTotalSupplyChainEmissions(startDate?: Date, endDate?: Date): Promise<number> {
+    const [result] = await db
+      .select({
+        total: sum(supplierEmissions.scope1Emissions)
+          .add(sum(supplierEmissions.scope2Emissions))
+          .add(sum(supplierEmissions.scope3Emissions))
+      })
+      .from(supplierEmissions);
+    
+    return Number(result?.total) || 0;
+  }
+
+  // Supplier Assessment operations
+  async getSupplierAssessment(id: number): Promise<SupplierAssessment | undefined> {
+    const [assessment] = await db.select().from(supplierAssessments).where(eq(supplierAssessments.id, id));
+    return assessment;
+  }
+
+  async getSupplierAssessments(supplierId: number): Promise<SupplierAssessment[]> {
+    return db
+      .select()
+      .from(supplierAssessments)
+      .where(eq(supplierAssessments.supplierId, supplierId))
+      .orderBy(desc(supplierAssessments.assessmentDate));
+  }
+
+  async createSupplierAssessment(assessment: InsertSupplierAssessment): Promise<SupplierAssessment> {
+    const [newAssessment] = await db
+      .insert(supplierAssessments)
+      .values({
+        ...assessment,
+        updatedAt: new Date()
+      })
+      .returning();
+    return newAssessment;
+  }
+
+  async updateAssessmentStatus(id: number, status: string): Promise<SupplierAssessment | undefined> {
+    const [updatedAssessment] = await db
+      .update(supplierAssessments)
+      .set({
+        status,
+        updatedAt: new Date()
+      })
+      .where(eq(supplierAssessments.id, id))
+      .returning();
+    return updatedAssessment;
+  }
+
+  // Supply Chain Risk operations
+  async getSupplyChainRisk(id: number): Promise<SupplyChainRisk | undefined> {
+    const [risk] = await db.select().from(supplyChainRisks).where(eq(supplyChainRisks.id, id));
+    return risk;
+  }
+
+  async getSupplierRisks(supplierId: number): Promise<SupplyChainRisk[]> {
+    return db
+      .select()
+      .from(supplyChainRisks)
+      .where(eq(supplyChainRisks.supplierId, supplierId))
+      .orderBy(supplyChainRisks.riskLevel);
+  }
+
+  async getHighPriorityRisks(): Promise<SupplyChainRisk[]> {
+    return db
+      .select()
+      .from(supplyChainRisks)
+      .where(eq(supplyChainRisks.riskLevel, "high"))
+      .orderBy(supplyChainRisks.dueDate);
+  }
+
+  async createSupplyChainRisk(risk: InsertSupplyChainRisk): Promise<SupplyChainRisk> {
+    const [newRisk] = await db
+      .insert(supplyChainRisks)
+      .values({
+        ...risk,
+        updatedAt: new Date()
+      })
+      .returning();
+    return newRisk;
+  }
+
+  async updateRiskStatus(id: number, status: string): Promise<SupplyChainRisk | undefined> {
+    const [updatedRisk] = await db
+      .update(supplyChainRisks)
+      .set({
+        status,
+        updatedAt: new Date()
+      })
+      .where(eq(supplyChainRisks.id, id))
+      .returning();
+    return updatedRisk;
   }
 }
 

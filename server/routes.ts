@@ -6,7 +6,11 @@ import {
   insertUserSchema,
   insertActivitySchema,
   insertUserAchievementSchema,
-  insertOffsetPurchaseSchema
+  insertOffsetPurchaseSchema,
+  insertSupplierSchema,
+  insertSupplierEmissionsSchema,
+  insertSupplierAssessmentSchema,
+  insertSupplyChainRiskSchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -299,6 +303,222 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } else {
       const resources = await storage.getAllEducationalResources();
       return res.json(resources);
+    }
+  });
+
+  // Supplier routes
+  app.get("/api/suppliers", async (_req: Request, res: Response) => {
+    const suppliers = await storage.getAllSuppliers();
+    return res.json(suppliers);
+  });
+
+  app.get("/api/suppliers/:id", async (req: Request, res: Response) => {
+    const supplierId = parseInt(req.params.id);
+    const supplier = await storage.getSupplier(supplierId);
+    
+    if (!supplier) {
+      return res.status(404).json({ message: "Supplier not found" });
+    }
+    
+    return res.json(supplier);
+  });
+
+  app.post("/api/suppliers", async (req: Request, res: Response) => {
+    try {
+      const supplierData = insertSupplierSchema.parse(req.body);
+      const supplier = await storage.createSupplier(supplierData);
+      return res.status(201).json(supplier);
+    } catch (error) {
+      return res.status(400).json({ message: "Invalid supplier data", error });
+    }
+  });
+
+  app.patch("/api/suppliers/:id", async (req: Request, res: Response) => {
+    try {
+      const supplierId = parseInt(req.params.id);
+      const supplier = await storage.getSupplier(supplierId);
+      
+      if (!supplier) {
+        return res.status(404).json({ message: "Supplier not found" });
+      }
+      
+      const updateData = req.body;
+      const updatedSupplier = await storage.updateSupplier(supplierId, updateData);
+      return res.json(updatedSupplier);
+    } catch (error) {
+      return res.status(400).json({ message: "Invalid supplier update data", error });
+    }
+  });
+
+  app.delete("/api/suppliers/:id", async (req: Request, res: Response) => {
+    try {
+      const supplierId = parseInt(req.params.id);
+      const success = await storage.deleteSupplier(supplierId);
+      
+      if (!success) {
+        return res.status(500).json({ message: "Failed to delete supplier" });
+      }
+      
+      return res.status(204).send();
+    } catch (error) {
+      return res.status(400).json({ message: "Error deleting supplier", error });
+    }
+  });
+
+  // Supplier emissions routes
+  app.get("/api/supplier-emissions/:supplierId", async (req: Request, res: Response) => {
+    const supplierId = parseInt(req.params.supplierId);
+    const emissions = await storage.getSupplierEmissions(supplierId);
+    return res.json(emissions);
+  });
+
+  app.post("/api/supplier-emissions", async (req: Request, res: Response) => {
+    try {
+      const emissionData = insertSupplierEmissionsSchema.parse(req.body);
+      const emission = await storage.createSupplierEmission(emissionData);
+      return res.status(201).json(emission);
+    } catch (error) {
+      return res.status(400).json({ message: "Invalid emission data", error });
+    }
+  });
+
+  app.get("/api/supply-chain/total-emissions", async (_req: Request, res: Response) => {
+    const totalEmissions = await storage.getTotalSupplyChainEmissions();
+    return res.json({ total: totalEmissions });
+  });
+
+  app.get("/api/emissions-by-year/:year", async (req: Request, res: Response) => {
+    const year = parseInt(req.params.year);
+    const emissionsByYear = await storage.getEmissionsByYear(year);
+    
+    // Get supplier details to include in response
+    const supplierIds = emissionsByYear.map(e => e.supplierId);
+    const suppliers = await Promise.all(
+      supplierIds.map(id => storage.getSupplier(id))
+    );
+    
+    const supplierMap = new Map(
+      suppliers
+        .filter(s => s !== undefined)
+        .map(s => [s!.id, s])
+    );
+    
+    const result = emissionsByYear.map(emission => ({
+      ...emission,
+      supplier: supplierMap.get(emission.supplierId)
+    }));
+    
+    return res.json(result);
+  });
+
+  // Supplier assessment routes
+  app.get("/api/supplier-assessments/:supplierId", async (req: Request, res: Response) => {
+    const supplierId = parseInt(req.params.supplierId);
+    const assessments = await storage.getSupplierAssessments(supplierId);
+    return res.json(assessments);
+  });
+
+  app.post("/api/supplier-assessments", async (req: Request, res: Response) => {
+    try {
+      // For simplicity, force conductedBy to user 1
+      const assessmentData = {
+        ...insertSupplierAssessmentSchema.parse(req.body),
+        conductedBy: 1
+      };
+      const assessment = await storage.createSupplierAssessment(assessmentData);
+      return res.status(201).json(assessment);
+    } catch (error) {
+      return res.status(400).json({ message: "Invalid assessment data", error });
+    }
+  });
+
+  app.patch("/api/supplier-assessments/:id/status", async (req: Request, res: Response) => {
+    try {
+      const assessmentId = parseInt(req.params.id);
+      const { status } = req.body;
+      
+      if (!status || typeof status !== 'string') {
+        return res.status(400).json({ message: "Status is required" });
+      }
+      
+      const updatedAssessment = await storage.updateAssessmentStatus(assessmentId, status);
+      
+      if (!updatedAssessment) {
+        return res.status(404).json({ message: "Assessment not found" });
+      }
+      
+      return res.json(updatedAssessment);
+    } catch (error) {
+      return res.status(400).json({ message: "Invalid status update", error });
+    }
+  });
+
+  // Supply chain risk routes
+  app.get("/api/supplier-risks/:supplierId", async (req: Request, res: Response) => {
+    const supplierId = parseInt(req.params.supplierId);
+    const risks = await storage.getSupplierRisks(supplierId);
+    return res.json(risks);
+  });
+
+  app.get("/api/high-priority-risks", async (_req: Request, res: Response) => {
+    const risks = await storage.getHighPriorityRisks();
+    
+    // Get supplier details to include in response
+    const supplierIds = [...new Set(risks.map(r => r.supplierId))];
+    const suppliers = await Promise.all(
+      supplierIds.map(id => storage.getSupplier(id))
+    );
+    
+    const supplierMap = new Map(
+      suppliers
+        .filter(s => s !== undefined)
+        .map(s => [s!.id, s])
+    );
+    
+    const result = risks.map(risk => ({
+      ...risk,
+      supplier: supplierMap.get(risk.supplierId)
+    }));
+    
+    return res.json(result);
+  });
+
+  app.post("/api/supply-chain-risks", async (req: Request, res: Response) => {
+    try {
+      // For simplicity, force responsibleUserId to user 1 if not provided
+      const riskData = {
+        ...insertSupplyChainRiskSchema.parse(req.body)
+      };
+      
+      if (!riskData.responsibleUserId) {
+        riskData.responsibleUserId = 1;
+      }
+      
+      const risk = await storage.createSupplyChainRisk(riskData);
+      return res.status(201).json(risk);
+    } catch (error) {
+      return res.status(400).json({ message: "Invalid risk data", error });
+    }
+  });
+
+  app.patch("/api/supply-chain-risks/:id/status", async (req: Request, res: Response) => {
+    try {
+      const riskId = parseInt(req.params.id);
+      const { status } = req.body;
+      
+      if (!status || typeof status !== 'string') {
+        return res.status(400).json({ message: "Status is required" });
+      }
+      
+      const updatedRisk = await storage.updateRiskStatus(riskId, status);
+      
+      if (!updatedRisk) {
+        return res.status(404).json({ message: "Risk not found" });
+      }
+      
+      return res.json(updatedRisk);
+    } catch (error) {
+      return res.status(400).json({ message: "Invalid status update", error });
     }
   });
 
