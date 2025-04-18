@@ -15,6 +15,7 @@ import Community from "@/pages/community";
 import Profile from "@/pages/profile";
 import NotFound from "@/pages/not-found";
 import Goals from "@/pages/goals";
+import Rewards from "@/pages/rewards";
 
 // Supply Chain pages
 import Suppliers from "@/pages/suppliers";

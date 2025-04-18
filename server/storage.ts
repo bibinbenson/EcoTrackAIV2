@@ -421,31 +421,31 @@ export class MemStorage implements IStorage {
         name: "Green Marketplace Discount",
         description: "10% discount on all eco-friendly products in the Green Marketplace",
         pointCost: 100,
-        category: "discount",
+        rewardType: "discount",
         isActive: true,
         expiryDate: null,
         imageUrl: "https://images.unsplash.com/photo-1564419320461-6870880221ad?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
-        redeemInstructions: "Show your reward code at checkout in participating eco-friendly stores"
+        partnerName: "Green Marketplace"
       },
       {
         name: "Plant a Tree",
         description: "We'll plant a tree in your name in a reforestation project",
         pointCost: 50,
-        category: "contribution",
+        rewardType: "donation",
         isActive: true,
         expiryDate: null,
         imageUrl: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
-        redeemInstructions: "Redeem this reward and we'll send you a certificate for your tree contribution"
+        partnerName: "Tree Alliance"
       },
       {
         name: "Carbon Offset Certificate",
         description: "Offset 1 ton of CO2 emissions with a verified carbon credit",
         pointCost: 200,
-        category: "offset",
+        rewardType: "offset",
         isActive: true,
         expiryDate: null,
         imageUrl: "https://images.unsplash.com/photo-1569180880150-df4eed93c90b?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
-        redeemInstructions: "Receive a digital certificate showing your carbon offset contribution"
+        partnerName: "Carbon Credit Exchange"
       }
     ];
     
@@ -1094,7 +1094,7 @@ export class MemStorage implements IStorage {
       id,
       isRedeemed: false,
       redeemedDate: null,
-      redeemCode: null
+      redemptionCode: null
     };
     this.userRewards.set(id, userReward);
     return userReward;
@@ -1103,14 +1103,14 @@ export class MemStorage implements IStorage {
   async redeemUserReward(userRewardId: number, userId: number): Promise<UserReward | undefined> {
     if (db) {
       // Generate unique code for redeeming
-      const redeemCode = `ECO-${Math.floor(100000 + Math.random() * 900000)}`;
+      const redemptionCode = `ECO-${Math.floor(100000 + Math.random() * 900000)}`;
       
       const [updatedUserReward] = await db
         .update(userRewards)
         .set({ 
           isRedeemed: true, 
           redeemedDate: new Date(),
-          redeemCode
+          redemptionCode
         })
         .where(and(
           eq(userRewards.id, userRewardId),
@@ -1129,13 +1129,13 @@ export class MemStorage implements IStorage {
     }
     
     // Generate unique code for redeeming
-    const redeemCode = `ECO-${Math.floor(100000 + Math.random() * 900000)}`;
+    const redemptionCode = `ECO-${Math.floor(100000 + Math.random() * 900000)}`;
     
     const updatedUserReward: UserReward = {
       ...userReward,
       isRedeemed: true,
       redeemedDate: new Date(),
-      redeemCode
+      redemptionCode
     };
     
     this.userRewards.set(userRewardId, updatedUserReward);
