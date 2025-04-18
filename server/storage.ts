@@ -578,14 +578,26 @@ export class MemStorage implements IStorage {
 
   // Offset Project operations
   async getOffsetProject(id: number): Promise<OffsetProject | undefined> {
+    if (db) {
+      const [project] = await db.select().from(offsetProjects).where(eq(offsetProjects.id, id));
+      return project;
+    }
     return this.offsetProjects.get(id);
   }
 
   async getAllOffsetProjects(): Promise<OffsetProject[]> {
+    if (db) {
+      return db.select().from(offsetProjects).orderBy(offsetProjects.name);
+    }
     return Array.from(this.offsetProjects.values());
   }
 
   async createOffsetProject(insertProject: InsertOffsetProject): Promise<OffsetProject> {
+    if (db) {
+      const [project] = await db.insert(offsetProjects).values(insertProject).returning();
+      return project;
+    }
+    
     const id = this.projectCurrentId++;
     const project: OffsetProject = { ...insertProject, id };
     this.offsetProjects.set(id, project);
@@ -594,32 +606,77 @@ export class MemStorage implements IStorage {
 
   // Offset Purchase operations
   async createOffsetPurchase(insertPurchase: InsertOffsetPurchase): Promise<OffsetPurchase> {
+    if (db) {
+      const [purchase] = await db
+        .insert(offsetPurchases)
+        .values({
+          ...insertPurchase,
+          purchaseDate: new Date()
+        })
+        .returning();
+      return purchase;
+    }
+    
     const id = this.purchaseCurrentId++;
-    const purchase: OffsetPurchase = { ...insertPurchase, id };
+    const purchase: OffsetPurchase = { 
+      ...insertPurchase, 
+      id,
+      purchaseDate: new Date()
+    };
     this.offsetPurchases.set(id, purchase);
     return purchase;
   }
 
   async getUserOffsetPurchases(userId: number): Promise<OffsetPurchase[]> {
+    if (db) {
+      return db
+        .select()
+        .from(offsetPurchases)
+        .where(eq(offsetPurchases.userId, userId))
+        .orderBy(desc(offsetPurchases.purchaseDate));
+    }
+    
     return Array.from(this.offsetPurchases.values())
-      .filter(purchase => purchase.userId === userId);
+      .filter(purchase => purchase.userId === userId)
+      .sort((a, b) => new Date(b.purchaseDate).getTime() - new Date(a.purchaseDate).getTime());
   }
 
   // Educational Resource operations
   async getEducationalResource(id: number): Promise<EducationalResource | undefined> {
+    if (db) {
+      const [resource] = await db.select().from(educationalResources).where(eq(educationalResources.id, id));
+      return resource;
+    }
     return this.educationalResources.get(id);
   }
 
   async getAllEducationalResources(): Promise<EducationalResource[]> {
+    if (db) {
+      return db.select().from(educationalResources);
+    }
     return Array.from(this.educationalResources.values());
   }
 
   async getResourcesByCategory(categoryId: number): Promise<EducationalResource[]> {
+    if (db) {
+      return db
+        .select()
+        .from(educationalResources)
+        .where(eq(educationalResources.categoryId, categoryId));
+    }
     return Array.from(this.educationalResources.values())
       .filter(resource => resource.categoryId === categoryId);
   }
 
   async createEducationalResource(insertResource: InsertEducationalResource): Promise<EducationalResource> {
+    if (db) {
+      const [resource] = await db
+        .insert(educationalResources)
+        .values(insertResource)
+        .returning();
+      return resource;
+    }
+    
     const id = this.resourceCurrentId++;
     const resource: EducationalResource = { ...insertResource, id };
     this.educationalResources.set(id, resource);
