@@ -108,6 +108,19 @@ export interface IStorage {
   createCarbonReductionGoal(goal: InsertCarbonReductionGoal): Promise<CarbonReductionGoal>;
   updateCarbonReductionGoalProgress(id: number, currentAmount: number): Promise<CarbonReductionGoal | undefined>;
   updateCarbonReductionGoalStatus(id: number, status: string): Promise<CarbonReductionGoal | undefined>;
+  
+  // Eco-Rewards operations
+  getEcoReward(id: number): Promise<EcoReward | undefined>;
+  getAllEcoRewards(): Promise<EcoReward[]>;
+  getActiveEcoRewards(): Promise<EcoReward[]>;
+  createEcoReward(reward: InsertEcoReward): Promise<EcoReward>;
+  
+  // User Rewards operations
+  getUserReward(id: number): Promise<UserReward | undefined>;
+  getUserRewards(userId: number): Promise<UserReward[]>;
+  getUserRedeemedRewards(userId: number): Promise<UserReward[]>;
+  createUserReward(userReward: InsertUserReward): Promise<UserReward>;
+  redeemUserReward(userRewardId: number, userId: number): Promise<UserReward | undefined>;
 }
 
 // In-memory implementation of storage
@@ -126,6 +139,8 @@ export class MemStorage implements IStorage {
   private supplierAssessments: Map<number, SupplierAssessment>;
   private supplyChainRisks: Map<number, SupplyChainRisk>;
   private carbonReductionGoals: Map<number, CarbonReductionGoal>;
+  private ecoRewards: Map<number, EcoReward>;
+  private userRewards: Map<number, UserReward>;
   
   private userCurrentId: number;
   private categoryCurrentId: number;
@@ -141,6 +156,8 @@ export class MemStorage implements IStorage {
   private assessmentCurrentId: number;
   private riskCurrentId: number;
   private goalCurrentId: number;
+  private rewardCurrentId: number;
+  private userRewardCurrentId: number;
 
   constructor() {
     this.users = new Map();
@@ -157,6 +174,8 @@ export class MemStorage implements IStorage {
     this.supplierAssessments = new Map();
     this.supplyChainRisks = new Map();
     this.carbonReductionGoals = new Map();
+    this.ecoRewards = new Map();
+    this.userRewards = new Map();
 
     this.userCurrentId = 1;
     this.categoryCurrentId = 1;
@@ -172,6 +191,8 @@ export class MemStorage implements IStorage {
     this.assessmentCurrentId = 1;
     this.riskCurrentId = 1;
     this.goalCurrentId = 1;
+    this.rewardCurrentId = 1;
+    this.userRewardCurrentId = 1;
 
     // Initialize with default data
     this.initializeDefaultData();
@@ -393,6 +414,42 @@ export class MemStorage implements IStorage {
     ];
     
     defaultGoals.forEach(goal => this.createCarbonReductionGoal(goal));
+    
+    // Default eco-rewards
+    const defaultRewards: InsertEcoReward[] = [
+      {
+        name: "Green Marketplace Discount",
+        description: "10% discount on all eco-friendly products in the Green Marketplace",
+        pointCost: 100,
+        category: "discount",
+        isActive: true,
+        expiryDate: null,
+        imageUrl: "https://images.unsplash.com/photo-1564419320461-6870880221ad?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
+        redeemInstructions: "Show your reward code at checkout in participating eco-friendly stores"
+      },
+      {
+        name: "Plant a Tree",
+        description: "We'll plant a tree in your name in a reforestation project",
+        pointCost: 50,
+        category: "contribution",
+        isActive: true,
+        expiryDate: null,
+        imageUrl: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
+        redeemInstructions: "Redeem this reward and we'll send you a certificate for your tree contribution"
+      },
+      {
+        name: "Carbon Offset Certificate",
+        description: "Offset 1 ton of CO2 emissions with a verified carbon credit",
+        pointCost: 200,
+        category: "offset",
+        isActive: true,
+        expiryDate: null,
+        imageUrl: "https://images.unsplash.com/photo-1569180880150-df4eed93c90b?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
+        redeemInstructions: "Receive a digital certificate showing your carbon offset contribution"
+      }
+    ];
+    
+    defaultRewards.forEach(reward => this.createEcoReward(reward));
   }
 
   // User operations
@@ -933,6 +990,156 @@ export class MemStorage implements IStorage {
     const updatedGoal = { ...goal, status, updatedAt: new Date() };
     this.carbonReductionGoals.set(id, updatedGoal);
     return updatedGoal;
+  }
+
+  // Eco-Rewards operations
+  async getEcoReward(id: number): Promise<EcoReward | undefined> {
+    if (db) {
+      const [reward] = await db.select().from(ecoRewards).where(eq(ecoRewards.id, id));
+      return reward;
+    }
+    return this.ecoRewards.get(id);
+  }
+
+  async getAllEcoRewards(): Promise<EcoReward[]> {
+    if (db) {
+      return db.select().from(ecoRewards);
+    }
+    return Array.from(this.ecoRewards.values());
+  }
+
+  async getActiveEcoRewards(): Promise<EcoReward[]> {
+    if (db) {
+      return db.select().from(ecoRewards).where(eq(ecoRewards.isActive, true));
+    }
+    return Array.from(this.ecoRewards.values())
+      .filter(reward => reward.isActive);
+  }
+
+  async createEcoReward(insertReward: InsertEcoReward): Promise<EcoReward> {
+    if (db) {
+      const [reward] = await db
+        .insert(ecoRewards)
+        .values(insertReward)
+        .returning();
+      return reward;
+    }
+    
+    const id = this.rewardCurrentId++;
+    const reward: EcoReward = { ...insertReward, id };
+    this.ecoRewards.set(id, reward);
+    return reward;
+  }
+  
+  // User Rewards operations
+  async getUserReward(id: number): Promise<UserReward | undefined> {
+    if (db) {
+      const [userReward] = await db.select().from(userRewards).where(eq(userRewards.id, id));
+      return userReward;
+    }
+    return this.userRewards.get(id);
+  }
+
+  async getUserRewards(userId: number): Promise<UserReward[]> {
+    if (db) {
+      return db
+        .select()
+        .from(userRewards)
+        .where(eq(userRewards.userId, userId))
+        .orderBy(desc(userRewards.dateEarned));
+    }
+    
+    return Array.from(this.userRewards.values())
+      .filter(userReward => userReward.userId === userId)
+      .sort((a, b) => new Date(b.dateEarned).getTime() - new Date(a.dateEarned).getTime());
+  }
+
+  async getUserRedeemedRewards(userId: number): Promise<UserReward[]> {
+    if (db) {
+      return db
+        .select()
+        .from(userRewards)
+        .where(and(
+          eq(userRewards.userId, userId),
+          eq(userRewards.isRedeemed, true)
+        ))
+        .orderBy(desc(userRewards.redeemedDate));
+    }
+    
+    return Array.from(this.userRewards.values())
+      .filter(userReward => userReward.userId === userId && userReward.isRedeemed)
+      .sort((a, b) => {
+        // Safely compare redeemedDate even if possibly undefined
+        const dateA = a.redeemedDate ? new Date(a.redeemedDate).getTime() : 0;
+        const dateB = b.redeemedDate ? new Date(b.redeemedDate).getTime() : 0;
+        return dateB - dateA;
+      });
+  }
+
+  async createUserReward(insertUserReward: InsertUserReward): Promise<UserReward> {
+    if (db) {
+      const [userReward] = await db
+        .insert(userRewards)
+        .values({
+          ...insertUserReward,
+          isRedeemed: false
+        })
+        .returning();
+      return userReward;
+    }
+    
+    const id = this.userRewardCurrentId++;
+    const userReward: UserReward = { 
+      ...insertUserReward, 
+      id,
+      isRedeemed: false,
+      redeemedDate: null,
+      redeemCode: null
+    };
+    this.userRewards.set(id, userReward);
+    return userReward;
+  }
+
+  async redeemUserReward(userRewardId: number, userId: number): Promise<UserReward | undefined> {
+    if (db) {
+      // Generate unique code for redeeming
+      const redeemCode = `ECO-${Math.floor(100000 + Math.random() * 900000)}`;
+      
+      const [updatedUserReward] = await db
+        .update(userRewards)
+        .set({ 
+          isRedeemed: true, 
+          redeemedDate: new Date(),
+          redeemCode
+        })
+        .where(and(
+          eq(userRewards.id, userRewardId),
+          eq(userRewards.userId, userId),
+          eq(userRewards.isRedeemed, false)
+        ))
+        .returning();
+      
+      return updatedUserReward;
+    }
+    
+    const userReward = await this.getUserReward(userRewardId);
+    
+    if (!userReward || userReward.userId !== userId || userReward.isRedeemed) {
+      return undefined;
+    }
+    
+    // Generate unique code for redeeming
+    const redeemCode = `ECO-${Math.floor(100000 + Math.random() * 900000)}`;
+    
+    const updatedUserReward: UserReward = {
+      ...userReward,
+      isRedeemed: true,
+      redeemedDate: new Date(),
+      redeemCode
+    };
+    
+    this.userRewards.set(userRewardId, updatedUserReward);
+    return updatedUserReward;
   }
 }
 
