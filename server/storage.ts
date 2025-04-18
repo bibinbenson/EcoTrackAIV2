@@ -133,7 +133,7 @@ export interface IStorage {
   getUserRewards(userId: number): Promise<UserReward[]>;
   getUserRedeemedRewards(userId: number): Promise<UserReward[]>;
   createUserReward(userReward: InsertUserReward): Promise<UserReward>;
-  redeemUserReward(userRewardId: number, userId: number): Promise<UserReward | undefined>;
+  redeemUserReward(userRewardId: number, userId: number, customRedemptionCode?: string): Promise<UserReward | undefined>;
 }
 
 // In-memory implementation of storage
@@ -1112,8 +1112,32 @@ export class MemStorage implements IStorage {
     this.userRewards.set(id, userReward);
     return userReward;
   }
-
-
+  
+  async redeemUserReward(userRewardId: number, userId: number, customRedemptionCode?: string): Promise<UserReward | undefined> {
+    if (db) {
+      // This is handled in the DatabaseStorage implementation
+      return undefined;
+    }
+    
+    const userReward = this.userRewards.get(userRewardId);
+    
+    if (!userReward || userReward.userId !== userId || userReward.isRedeemed) {
+      return undefined;
+    }
+    
+    // Generate unique code for redeeming
+    const redemptionCode = customRedemptionCode || `ECO-${Math.floor(100000 + Math.random() * 900000)}`;
+    
+    const updatedUserReward: UserReward = {
+      ...userReward,
+      isRedeemed: true,
+      redeemedDate: new Date(),
+      redemptionCode
+    };
+    
+    this.userRewards.set(userRewardId, updatedUserReward);
+    return updatedUserReward;
+  }
 }
 
 export class DatabaseStorage implements IStorage {
