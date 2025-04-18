@@ -15,6 +15,11 @@ import Community from "@/pages/community";
 import Profile from "@/pages/profile";
 import NotFound from "@/pages/not-found";
 
+// Supply Chain pages
+import Suppliers from "@/pages/suppliers";
+import SupplierEmissions from "@/pages/supplier-emissions";
+import SupplyChainRisks from "@/pages/supply-chain-risks";
+
 function Router() {
   return (
     <Switch>
@@ -25,6 +30,12 @@ function Router() {
       <Route path="/marketplace" component={Marketplace} />
       <Route path="/community" component={Community} />
       <Route path="/profile" component={Profile} />
+      
+      {/* Supply Chain Routes */}
+      <Route path="/suppliers" component={Suppliers} />
+      <Route path="/supplier-emissions" component={SupplierEmissions} />
+      <Route path="/supply-chain-risks" component={SupplyChainRisks} />
+      
       <Route component={NotFound} />
     </Switch>
   );

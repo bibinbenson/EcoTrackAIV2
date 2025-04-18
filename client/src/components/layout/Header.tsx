@@ -13,6 +13,13 @@ const navItems = [
   { href: "/community", label: "Community" },
 ];
 
+// Supply chain navigation items
+const supplyChainItems = [
+  { href: "/suppliers", label: "Suppliers" },
+  { href: "/supplier-emissions", label: "Emissions" },
+  { href: "/supply-chain-risks", label: "Risks" },
+];
+
 interface HeaderProps {
   currentPath: string;
 }
@@ -43,6 +50,24 @@ export default function Header({ currentPath }: HeaderProps) {
               </a>
             </Link>
           ))}
+          
+          {/* Supply Chain Navigation - Desktop */}
+          <div className="relative group">
+            <a className="text-neutral-800 hover:text-primary font-medium cursor-pointer">
+              Supply Chain
+            </a>
+            <div className="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 hidden group-hover:block">
+              {supplyChainItems.map((item) => (
+                <Link key={item.href} href={item.href}>
+                  <a className={`block px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-100 ${
+                    currentPath === item.href ? "bg-neutral-100" : ""
+                  }`}>
+                    {item.label}
+                  </a>
+                </Link>
+              ))}
+            </div>
+          </div>
         </nav>
 
         <div className="flex items-center">
@@ -81,6 +106,23 @@ export default function Header({ currentPath }: HeaderProps) {
                     </a>
                   </Link>
                 ))}
+                
+                {/* Supply Chain Items - Mobile */}
+                <div className="px-3 py-2 font-medium text-neutral-800">
+                  Supply Chain
+                </div>
+                {supplyChainItems.map((item) => (
+                  <Link key={item.href} href={item.href}>
+                    <a className={`px-6 py-2 rounded-md text-sm font-medium ${
+                      currentPath === item.href
+                        ? "bg-primary text-white"
+                        : "text-neutral-700 hover:bg-neutral-100"
+                    }`}>
+                      {item.label}
+                    </a>
+                  </Link>
+                ))}
+                
                 <Link href="/calculator">
                   <Button variant="default" className="mt-2 w-full">
                     Log Activity
