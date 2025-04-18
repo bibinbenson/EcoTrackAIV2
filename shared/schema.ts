@@ -127,6 +127,14 @@ export const offsetPurchases = pgTable("offset_purchases", {
 
 export const insertOffsetPurchaseSchema = createInsertSchema(offsetPurchases).omit({
   id: true
+}).extend({
+  purchaseDate: z.preprocess(
+    (arg) => {
+      if (typeof arg === 'string' || arg instanceof Date) return new Date(arg);
+      return new Date(); // Default to current date if not provided
+    },
+    z.date()
+  )
 });
 
 // Educational resources

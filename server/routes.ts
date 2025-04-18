@@ -260,13 +260,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // For simplicity, force userId to 1
       const purchaseData = {
-        ...insertOffsetPurchaseSchema.parse(req.body),
-        userId: 1,
-        purchaseDate: new Date()
+        ...req.body,
+        userId: 1
       };
-      const purchase = await storage.createOffsetPurchase(purchaseData);
+      
+      // Validate the purchase data
+      const validatedData = insertOffsetPurchaseSchema.parse(purchaseData);
+      
+      const purchase = await storage.createOffsetPurchase(validatedData);
       return res.status(201).json(purchase);
     } catch (error) {
+      console.error("Error creating offset purchase:", error);
       return res.status(400).json({ message: "Invalid offset purchase data", error });
     }
   });
