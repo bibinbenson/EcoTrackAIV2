@@ -30,12 +30,12 @@ export default function Header({ currentPath }: HeaderProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
         <div className="flex items-center">
           <Link href="/dashboard">
-            <a className="flex items-center">
+            <div className="flex items-center cursor-pointer">
               <svg className="h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 16.95h-2v-9h2v9zm4 0h-2v-12h2v12z"/>
               </svg>
               <h1 className="ml-2 text-xl font-bold text-neutral-800">EcoTrack</h1>
-            </a>
+            </div>
           </Link>
         </div>
 
@@ -43,27 +43,27 @@ export default function Header({ currentPath }: HeaderProps) {
         <nav className="hidden md:flex space-x-8">
           {navItems.map((item) => (
             <Link key={item.href} href={item.href}>
-              <a className={`text-neutral-800 hover:text-primary font-medium ${
+              <div className={`text-neutral-800 hover:text-primary font-medium cursor-pointer ${
                 currentPath === item.href ? "text-primary" : ""
               }`}>
                 {item.label}
-              </a>
+              </div>
             </Link>
           ))}
           
           {/* Supply Chain Navigation - Desktop */}
           <div className="relative group">
-            <a className="text-neutral-800 hover:text-primary font-medium cursor-pointer">
+            <div className="text-neutral-800 hover:text-primary font-medium cursor-pointer">
               Supply Chain
-            </a>
+            </div>
             <div className="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 hidden group-hover:block">
               {supplyChainItems.map((item) => (
                 <Link key={item.href} href={item.href}>
-                  <a className={`block px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-100 ${
+                  <div className={`block px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-100 cursor-pointer ${
                     currentPath === item.href ? "bg-neutral-100" : ""
                   }`}>
                     {item.label}
-                  </a>
+                  </div>
                 </Link>
               ))}
             </div>
@@ -77,13 +77,13 @@ export default function Header({ currentPath }: HeaderProps) {
             </Button>
           </Link>
           <Link href="/profile">
-            <a className="h-8 w-8 rounded-full overflow-hidden">
+            <div className="h-8 w-8 rounded-full overflow-hidden cursor-pointer">
               <img
                 className="h-full w-full object-cover"
                 src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
                 alt="Profile"
               />
-            </a>
+            </div>
           </Link>
 
           {/* Mobile menu button */}
@@ -97,13 +97,13 @@ export default function Header({ currentPath }: HeaderProps) {
               <div className="flex flex-col pt-2 pb-4 space-y-1">
                 {navItems.map((item) => (
                   <Link key={item.href} href={item.href}>
-                    <a className={`px-3 py-2 rounded-md text-base font-medium ${
+                    <div className={`px-3 py-2 rounded-md text-base font-medium cursor-pointer ${
                       currentPath === item.href
                         ? "bg-primary text-white"
                         : "text-neutral-800 hover:bg-neutral-100"
                     }`}>
                       {item.label}
-                    </a>
+                    </div>
                   </Link>
                 ))}
                 
@@ -113,13 +113,13 @@ export default function Header({ currentPath }: HeaderProps) {
                 </div>
                 {supplyChainItems.map((item) => (
                   <Link key={item.href} href={item.href}>
-                    <a className={`px-6 py-2 rounded-md text-sm font-medium ${
+                    <div className={`px-6 py-2 rounded-md text-sm font-medium cursor-pointer ${
                       currentPath === item.href
                         ? "bg-primary text-white"
                         : "text-neutral-700 hover:bg-neutral-100"
                     }`}>
                       {item.label}
-                    </a>
+                    </div>
                   </Link>
                 ))}
                 
