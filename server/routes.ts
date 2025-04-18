@@ -255,6 +255,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     return res.json(project);
   });
+  
+  app.post("/api/offset-projects", async (req: Request, res: Response) => {
+    try {
+      const projectData = insertOffsetProjectSchema.parse(req.body);
+      const project = await storage.createOffsetProject(projectData);
+      return res.status(201).json(project);
+    } catch (error) {
+      console.error("Error creating offset project:", error);
+      return res.status(400).json({ message: "Invalid offset project data", error });
+    }
+  });
 
   app.post("/api/offset-purchases", async (req: Request, res: Response) => {
     try {
