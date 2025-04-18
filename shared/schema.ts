@@ -143,11 +143,101 @@ export const insertEducationalResourceSchema = createInsertSchema(educationalRes
   id: true
 });
 
+// Supply Chain Management
+export const suppliers = pgTable("suppliers", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  contactName: text("contact_name"),
+  contactEmail: text("contact_email"),
+  industry: text("industry"),
+  location: text("location"),
+  tier: integer("tier").default(1).notNull(), // 1 = direct supplier, 2 = tier 2, etc.
+  annualSpend: real("annual_spend"),
+  sustainabilityRating: integer("sustainability_rating"), // 1-100 score
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+export const insertSupplierSchema = createInsertSchema(suppliers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export const supplierEmissions = pgTable("supplier_emissions", {
+  id: serial("id").primaryKey(),
+  supplierId: integer("supplier_id").notNull(),
+  year: integer("year").notNull(),
+  quarter: integer("quarter").notNull(), // 1-4
+  scope1Emissions: real("scope1_emissions"), // direct emissions (tons CO2e)
+  scope2Emissions: real("scope2_emissions"), // indirect emissions from purchased energy (tons CO2e)
+  scope3Emissions: real("scope3_emissions"), // other indirect emissions (tons CO2e)
+  dataSource: text("data_source"), // e.g., "reported", "estimated"
+  verificationStatus: text("verification_status"), // e.g., "unverified", "third-party-verified"
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+export const insertSupplierEmissionsSchema = createInsertSchema(supplierEmissions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export const supplierAssessments = pgTable("supplier_assessments", {
+  id: serial("id").primaryKey(),
+  supplierId: integer("supplier_id").notNull(),
+  assessmentDate: timestamp("assessment_date").notNull(),
+  conductedBy: integer("conducted_by").notNull(), // user ID
+  environmentalScore: integer("environmental_score"), // 1-100
+  socialScore: integer("social_score"), // 1-100
+  governanceScore: integer("governance_score"), // 1-100
+  overallScore: integer("overall_score"), // 1-100
+  strengths: text("strengths").array(),
+  weaknesses: text("weaknesses").array(),
+  improvementPlan: text("improvement_plan"),
+  nextAssessmentDate: timestamp("next_assessment_date"),
+  status: text("status").default("draft").notNull(), // draft, in-progress, completed
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+export const insertSupplierAssessmentSchema = createInsertSchema(supplierAssessments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export const supplyChainRisks = pgTable("supply_chain_risks", {
+  id: serial("id").primaryKey(),
+  supplierId: integer("supplier_id").notNull(),
+  riskType: text("risk_type").notNull(), // e.g., "climate", "regulatory", "social"
+  riskLevel: text("risk_level").notNull(), // "low", "medium", "high", "critical"
+  description: text("description").notNull(),
+  potentialImpact: text("potential_impact"),
+  mitigationPlan: text("mitigation_plan"),
+  status: text("status").default("identified").notNull(), // identified, monitored, mitigated
+  responsibleUserId: integer("responsible_user_id"),
+  dueDate: timestamp("due_date"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+export const insertSupplyChainRiskSchema = createInsertSchema(supplyChainRisks).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
 // Relation definitions
 export const usersRelations = relations(users, ({ many }) => ({
   activities: many(activities),
   userAchievements: many(userAchievements),
-  offsetPurchases: many(offsetPurchases)
+  offsetPurchases: many(offsetPurchases),
+  supplierAssessments: many(supplierAssessments),
+  supplyChainRisks: many(supplyChainRisks)
 }));
 
 export const categoriesRelations = relations(categories, ({ many }) => ({
@@ -211,6 +301,41 @@ export const educationalResourcesRelations = relations(educationalResources, ({ 
   })
 }));
 
+export const suppliersRelations = relations(suppliers, ({ many }) => ({
+  emissions: many(supplierEmissions),
+  assessments: many(supplierAssessments),
+  risks: many(supplyChainRisks)
+}));
+
+export const supplierEmissionsRelations = relations(supplierEmissions, ({ one }) => ({
+  supplier: one(suppliers, {
+    fields: [supplierEmissions.supplierId],
+    references: [suppliers.id]
+  })
+}));
+
+export const supplierAssessmentsRelations = relations(supplierAssessments, ({ one }) => ({
+  supplier: one(suppliers, {
+    fields: [supplierAssessments.supplierId],
+    references: [suppliers.id]
+  }),
+  user: one(users, {
+    fields: [supplierAssessments.conductedBy],
+    references: [users.id]
+  })
+}));
+
+export const supplyChainRisksRelations = relations(supplyChainRisks, ({ one }) => ({
+  supplier: one(suppliers, {
+    fields: [supplyChainRisks.supplierId],
+    references: [suppliers.id]
+  }),
+  responsibleUser: one(users, {
+    fields: [supplyChainRisks.responsibleUserId],
+    references: [users.id]
+  })
+}));
+
 // Type exports
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -238,3 +363,15 @@ export type InsertOffsetPurchase = z.infer<typeof insertOffsetPurchaseSchema>;
 
 export type EducationalResource = typeof educationalResources.$inferSelect;
 export type InsertEducationalResource = z.infer<typeof insertEducationalResourceSchema>;
+
+export type Supplier = typeof suppliers.$inferSelect;
+export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
+
+export type SupplierEmission = typeof supplierEmissions.$inferSelect;
+export type InsertSupplierEmission = z.infer<typeof insertSupplierEmissionsSchema>;
+
+export type SupplierAssessment = typeof supplierAssessments.$inferSelect;
+export type InsertSupplierAssessment = z.infer<typeof insertSupplierAssessmentSchema>;
+
+export type SupplyChainRisk = typeof supplyChainRisks.$inferSelect;
+export type InsertSupplyChainRisk = z.infer<typeof insertSupplyChainRiskSchema>;

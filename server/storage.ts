@@ -66,6 +66,33 @@ export interface IStorage {
   getAllEducationalResources(): Promise<EducationalResource[]>;
   getResourcesByCategory(categoryId: number): Promise<EducationalResource[]>;
   createEducationalResource(resource: InsertEducationalResource): Promise<EducationalResource>;
+
+  // Supplier operations
+  getSupplier(id: number): Promise<Supplier | undefined>;
+  getAllSuppliers(): Promise<Supplier[]>;
+  createSupplier(supplier: InsertSupplier): Promise<Supplier>;
+  updateSupplier(id: number, data: Partial<InsertSupplier>): Promise<Supplier | undefined>;
+  deleteSupplier(id: number): Promise<boolean>;
+  
+  // Supplier Emissions operations
+  getSupplierEmission(id: number): Promise<SupplierEmission | undefined>;
+  getSupplierEmissions(supplierId: number): Promise<SupplierEmission[]>;
+  getEmissionsByYear(year: number): Promise<{supplierId: number, totalScope1: number, totalScope2: number, totalScope3: number}[]>;
+  createSupplierEmission(emission: InsertSupplierEmission): Promise<SupplierEmission>;
+  getTotalSupplyChainEmissions(startDate?: Date, endDate?: Date): Promise<number>;
+  
+  // Supplier Assessment operations
+  getSupplierAssessment(id: number): Promise<SupplierAssessment | undefined>;
+  getSupplierAssessments(supplierId: number): Promise<SupplierAssessment[]>;
+  createSupplierAssessment(assessment: InsertSupplierAssessment): Promise<SupplierAssessment>;
+  updateAssessmentStatus(id: number, status: string): Promise<SupplierAssessment | undefined>;
+  
+  // Supply Chain Risk operations
+  getSupplyChainRisk(id: number): Promise<SupplyChainRisk | undefined>;
+  getSupplierRisks(supplierId: number): Promise<SupplyChainRisk[]>;
+  getHighPriorityRisks(): Promise<SupplyChainRisk[]>;
+  createSupplyChainRisk(risk: InsertSupplyChainRisk): Promise<SupplyChainRisk>;
+  updateRiskStatus(id: number, status: string): Promise<SupplyChainRisk | undefined>;
 }
 
 // In-memory implementation of storage
