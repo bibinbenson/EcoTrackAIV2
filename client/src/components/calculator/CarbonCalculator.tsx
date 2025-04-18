@@ -648,10 +648,62 @@ export default function CarbonCalculator() {
               </>
             )}
             
+            {/* Carbon estimate display with environmental impact indicator */}
             {carbonEstimate !== null && (
-              <div className="p-4 bg-green-50 border border-green-100 rounded-lg">
-                <p className="text-green-800 font-medium">Estimated carbon footprint:</p>
-                <p className="text-2xl font-bold text-green-700">{carbonEstimate.toFixed(2)} kg CO₂e</p>
+              <div className="mt-2 rounded-md overflow-hidden">
+                <div className={`p-4 ${
+                  carbonEstimate < 5 ? "bg-green-50 border border-green-100" : 
+                  carbonEstimate < 20 ? "bg-yellow-50 border border-yellow-100" : 
+                  "bg-red-50 border border-red-100"
+                }`}>
+                  <div className="flex justify-between items-center mb-1">
+                    <p className={`text-sm font-medium ${
+                      carbonEstimate < 5 ? "text-green-800" : 
+                      carbonEstimate < 20 ? "text-yellow-800" : 
+                      "text-red-800"
+                    }`}>
+                      Estimated Carbon Footprint:
+                    </p>
+                    <div className={`text-xs px-2 py-1 rounded-full font-medium ${
+                      carbonEstimate < 5 ? "bg-green-200 text-green-800" : 
+                      carbonEstimate < 20 ? "bg-yellow-200 text-yellow-800" : 
+                      "bg-red-200 text-red-800"
+                    }`}>
+                      {carbonEstimate < 5 ? "Low Impact" : 
+                       carbonEstimate < 20 ? "Medium Impact" : 
+                       "High Impact"}
+                    </div>
+                  </div>
+                  <p className={`text-2xl font-bold ${
+                    carbonEstimate < 5 ? "text-green-700" : 
+                    carbonEstimate < 20 ? "text-yellow-700" : 
+                    "text-red-700"
+                  }`}>
+                    {carbonEstimate.toFixed(2)} kg CO₂e
+                  </p>
+                  <div className="mt-2">
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className={`h-2 rounded-full ${
+                          carbonEstimate < 5 ? "bg-green-500" : 
+                          carbonEstimate < 20 ? "bg-yellow-500" : 
+                          "bg-red-500"
+                        }`} 
+                        style={{ width: `${Math.min(100, carbonEstimate * 2)}%` }}
+                      ></div>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>Low</span>
+                      <span>Medium</span>
+                      <span>High Impact</span>
+                    </div>
+                  </div>
+                </div>
+                {carbonEstimate > 20 && (
+                  <div className="bg-red-100 px-4 py-2 text-sm text-red-800">
+                    <strong>Tip:</strong> Consider more sustainable alternatives to reduce your carbon footprint.
+                  </div>
+                )}
               </div>
             )}
             

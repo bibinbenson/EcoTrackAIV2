@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, real, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, real, jsonb, date } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
@@ -336,8 +336,70 @@ export const supplyChainRisksRelations = relations(supplyChainRisks, ({ one }) =
   })
 }));
 
+// Carbon Reduction Goals
+export const carbonReductionGoals = pgTable("carbon_reduction_goals", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  targetAmount: real("target_amount").notNull(), // reduction in kg CO2e
+  currentAmount: real("current_amount").default(0).notNull(), // current reduction achieved
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date").notNull(),
+  categoryId: integer("category_id"), // optional category focus
+  status: text("status").default("active").notNull(), // active, completed, abandoned
+  reminderFrequency: text("reminder_frequency").default("weekly"), // daily, weekly, monthly
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+export const insertCarbonReductionGoalSchema = createInsertSchema(carbonReductionGoals).omit({
+  id: true,
+  currentAmount: true,
+  createdAt: true,
+  updatedAt: true
+}).extend({
+  startDate: z.preprocess(
+    (arg) => {
+      if (typeof arg === 'string' || arg instanceof Date) return new Date(arg);
+      return undefined;
+    },
+    z.date()
+  ),
+  endDate: z.preprocess(
+    (arg) => {
+      if (typeof arg === 'string' || arg instanceof Date) return new Date(arg);
+      return undefined;
+    },
+    z.date()
+  )
+});
+
+export const carbonReductionGoalsRelations = relations(carbonReductionGoals, ({ one }) => ({
+  user: one(users, {
+    fields: [carbonReductionGoals.userId],
+    references: [users.id]
+  }),
+  category: one(categories, {
+    fields: [carbonReductionGoals.categoryId],
+    references: [categories.id]
+  })
+}));
+
+// Update user relations to include goals
+export const usersRelationsUpdated = relations(users, ({ many }) => ({
+  activities: many(activities),
+  userAchievements: many(userAchievements),
+  offsetPurchases: many(offsetPurchases),
+  supplierAssessments: many(supplierAssessments),
+  supplyChainRisks: many(supplyChainRisks),
+  carbonReductionGoals: many(carbonReductionGoals)
+}));
+
 // Type exports
 export type User = typeof users.$inferSelect;
+export type CarbonReductionGoal = typeof carbonReductionGoals.$inferSelect;
+export type InsertCarbonReductionGoal = z.infer<typeof insertCarbonReductionGoalSchema>;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 
 export type Category = typeof categories.$inferSelect;
