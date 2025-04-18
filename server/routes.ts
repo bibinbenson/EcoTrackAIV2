@@ -772,8 +772,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Reward already redeemed" });
       }
       
-      // Generate a random redemption code (in a real app, this would be more sophisticated)
-      const redemptionCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+      // Generate a redemption code in the format "ECO-XXXXXX"
+      const redemptionCode = `ECO-${Math.floor(100000 + Math.random() * 900000)}`;
       
       // Update user reward
       const userId = 1; // For simplicity, use fixed user
