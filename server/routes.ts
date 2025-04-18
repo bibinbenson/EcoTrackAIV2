@@ -10,7 +10,8 @@ import {
   insertSupplierSchema,
   insertSupplierEmissionsSchema,
   insertSupplierAssessmentSchema,
-  insertSupplyChainRiskSchema
+  insertSupplyChainRiskSchema,
+  insertCarbonReductionGoalSchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -518,6 +519,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       return res.json(updatedRisk);
     } catch (error) {
+      return res.status(400).json({ message: "Invalid status update", error });
+    }
+  });
+
+  // Carbon Reduction Goals routes
+  app.get("/api/carbon-reduction-goals", async (req: Request, res: Response) => {
+    try {
+      const userId = 1; // For simplicity, use fixed user
+      
+      // Filter by status if provided
+      if (req.query.status === 'active') {
+        const goals = await storage.getActiveCarbonReductionGoals(userId);
+        return res.json(goals);
+      } else {
+        const goals = await storage.getUserCarbonReductionGoals(userId);
+        return res.json(goals);
+      }
+    } catch (error) {
+      console.error("Error fetching carbon reduction goals:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.get("/api/carbon-reduction-goals/:id", async (req: Request, res: Response) => {
+    try {
+      const goalId = parseInt(req.params.id);
+      const goal = await storage.getCarbonReductionGoal(goalId);
+      
+      if (!goal) {
+        return res.status(404).json({ message: "Carbon reduction goal not found" });
+      }
+      
+      return res.json(goal);
+    } catch (error) {
+      console.error("Error fetching carbon reduction goal:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/carbon-reduction-goals", async (req: Request, res: Response) => {
+    try {
+      // For simplicity, force userId to 1
+      const goalData = {
+        ...req.body,
+        userId: 1
+      };
+      
+      const validatedData = insertCarbonReductionGoalSchema.parse(goalData);
+      const goal = await storage.createCarbonReductionGoal(validatedData);
+      return res.status(201).json(goal);
+    } catch (error) {
+      console.error("Error creating carbon reduction goal:", error);
+      return res.status(400).json({ message: "Invalid goal data", error });
+    }
+  });
+
+  app.patch("/api/carbon-reduction-goals/:id/progress", async (req: Request, res: Response) => {
+    try {
+      const goalId = parseInt(req.params.id);
+      
+      const updateSchema = z.object({
+        currentAmount: z.number().min(0)
+      });
+      
+      const { currentAmount } = updateSchema.parse(req.body);
+      
+      const updatedGoal = await storage.updateCarbonReductionGoalProgress(goalId, currentAmount);
+      
+      if (!updatedGoal) {
+        return res.status(404).json({ message: "Carbon reduction goal not found" });
+      }
+      
+      return res.json(updatedGoal);
+    } catch (error) {
+      console.error("Error updating goal progress:", error);
+      return res.status(400).json({ message: "Invalid progress update data", error });
+    }
+  });
+
+  app.patch("/api/carbon-reduction-goals/:id/status", async (req: Request, res: Response) => {
+    try {
+      const goalId = parseInt(req.params.id);
+      const { status } = req.body;
+      
+      if (!status || typeof status !== 'string') {
+        return res.status(400).json({ message: "Status is required" });
+      }
+      
+      if (!['active', 'paused', 'completed', 'cancelled'].includes(status)) {
+        return res.status(400).json({ message: "Invalid status value. Must be one of: active, paused, completed, cancelled" });
+      }
+      
+      const updatedGoal = await storage.updateCarbonReductionGoalStatus(goalId, status);
+      
+      if (!updatedGoal) {
+        return res.status(404).json({ message: "Carbon reduction goal not found" });
+      }
+      
+      return res.json(updatedGoal);
+    } catch (error) {
+      console.error("Error updating goal status:", error);
       return res.status(400).json({ message: "Invalid status update", error });
     }
   });
