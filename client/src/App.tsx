@@ -29,6 +29,7 @@ function Router() {
       <Route path="/calculator" component={Calculator} />
       <Route path="/learn" component={Learn} />
       <Route path="/marketplace" component={Marketplace} />
+      <Route path="/marketplace/:id" component={Marketplace} />
       <Route path="/community" component={Community} />
       <Route path="/profile" component={Profile} />
       <Route path="/goals" component={Goals} />
