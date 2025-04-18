@@ -14,6 +14,7 @@ import Marketplace from "@/pages/marketplace";
 import Community from "@/pages/community";
 import Profile from "@/pages/profile";
 import NotFound from "@/pages/not-found";
+import Goals from "@/pages/goals";
 
 // Supply Chain pages
 import Suppliers from "@/pages/suppliers";
@@ -30,6 +31,7 @@ function Router() {
       <Route path="/marketplace" component={Marketplace} />
       <Route path="/community" component={Community} />
       <Route path="/profile" component={Profile} />
+      <Route path="/goals" component={Goals} />
       
       {/* Supply Chain Routes */}
       <Route path="/suppliers" component={Suppliers} />
