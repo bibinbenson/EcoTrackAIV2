@@ -359,6 +359,38 @@ export class MemStorage implements IStorage {
     };
     
     this.createUserAchievement(cyclingProgress);
+    
+    // Create some default carbon reduction goals
+    const nextMonth = new Date();
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    
+    const nextQuarter = new Date();
+    nextQuarter.setMonth(nextQuarter.getMonth() + 3);
+    
+    const defaultGoals: InsertCarbonReductionGoal[] = [
+      {
+        userId: 1,
+        title: "Monthly Commute Reduction",
+        description: "Reduce carbon emissions from daily commuting",
+        targetAmount: 25,
+        startDate: new Date(),
+        endDate: nextMonth,
+        categoryId: 1, // Transport
+        reminderFrequency: "weekly"
+      },
+      {
+        userId: 1,
+        title: "Quarterly Food Impact",
+        description: "Lower carbon footprint from food consumption by choosing local and plant-based options",
+        targetAmount: 100,
+        startDate: new Date(),
+        endDate: nextQuarter,
+        categoryId: 3, // Food
+        reminderFrequency: "monthly"
+      }
+    ];
+    
+    defaultGoals.forEach(goal => this.createCarbonReductionGoal(goal));
   }
 
   // User operations
@@ -781,6 +813,67 @@ export class MemStorage implements IStorage {
     };
     this.supplyChainRisks.set(id, updatedRisk);
     return updatedRisk;
+  }
+
+  // Carbon Reduction Goals operations
+  async getCarbonReductionGoal(id: number): Promise<CarbonReductionGoal | undefined> {
+    return this.carbonReductionGoals.get(id);
+  }
+
+  async getUserCarbonReductionGoals(userId: number): Promise<CarbonReductionGoal[]> {
+    return Array.from(this.carbonReductionGoals.values())
+      .filter(goal => goal.userId === userId);
+  }
+
+  async getActiveCarbonReductionGoals(userId: number): Promise<CarbonReductionGoal[]> {
+    return Array.from(this.carbonReductionGoals.values())
+      .filter(goal => goal.userId === userId && goal.status === "active");
+  }
+
+  async createCarbonReductionGoal(insertGoal: InsertCarbonReductionGoal): Promise<CarbonReductionGoal> {
+    const id = this.goalCurrentId++;
+    const now = new Date();
+    const goal: CarbonReductionGoal = {
+      ...insertGoal,
+      id,
+      currentAmount: 0,
+      status: "active",
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    this.carbonReductionGoals.set(id, goal);
+    return goal;
+  }
+
+  async updateCarbonReductionGoalProgress(id: number, currentAmount: number): Promise<CarbonReductionGoal | undefined> {
+    const goal = await this.getCarbonReductionGoal(id);
+    if (!goal) return undefined;
+    
+    // Auto-update status to completed if target reached
+    let status = goal.status;
+    if (currentAmount >= goal.targetAmount && status === "active") {
+      status = "completed";
+    }
+    
+    const updatedGoal = { 
+      ...goal, 
+      currentAmount, 
+      status,
+      updatedAt: new Date() 
+    };
+    
+    this.carbonReductionGoals.set(id, updatedGoal);
+    return updatedGoal;
+  }
+
+  async updateCarbonReductionGoalStatus(id: number, status: string): Promise<CarbonReductionGoal | undefined> {
+    const goal = await this.getCarbonReductionGoal(id);
+    if (!goal) return undefined;
+    
+    const updatedGoal = { ...goal, status, updatedAt: new Date() };
+    this.carbonReductionGoals.set(id, updatedGoal);
+    return updatedGoal;
   }
 }
 
@@ -1290,6 +1383,89 @@ export class DatabaseStorage implements IStorage {
       .where(eq(supplyChainRisks.id, id))
       .returning();
     return updatedRisk;
+  }
+
+  // Carbon Reduction Goals operations
+  async getCarbonReductionGoal(id: number): Promise<CarbonReductionGoal | undefined> {
+    const [goal] = await db
+      .select()
+      .from(carbonReductionGoals)
+      .where(eq(carbonReductionGoals.id, id));
+    return goal;
+  }
+
+  async getUserCarbonReductionGoals(userId: number): Promise<CarbonReductionGoal[]> {
+    return db
+      .select()
+      .from(carbonReductionGoals)
+      .where(eq(carbonReductionGoals.userId, userId))
+      .orderBy(carbonReductionGoals.createdAt);
+  }
+
+  async getActiveCarbonReductionGoals(userId: number): Promise<CarbonReductionGoal[]> {
+    return db
+      .select()
+      .from(carbonReductionGoals)
+      .where(
+        and(
+          eq(carbonReductionGoals.userId, userId),
+          eq(carbonReductionGoals.status, "active")
+        )
+      )
+      .orderBy(carbonReductionGoals.endDate);
+  }
+
+  async createCarbonReductionGoal(goal: InsertCarbonReductionGoal): Promise<CarbonReductionGoal> {
+    const now = new Date();
+    const [newGoal] = await db
+      .insert(carbonReductionGoals)
+      .values({
+        ...goal,
+        currentAmount: 0,
+        status: "active",
+        createdAt: now,
+        updatedAt: now
+      })
+      .returning();
+    return newGoal;
+  }
+
+  async updateCarbonReductionGoalProgress(id: number, currentAmount: number): Promise<CarbonReductionGoal | undefined> {
+    // First get the goal to check if it should be marked as completed
+    const goal = await this.getCarbonReductionGoal(id);
+    if (!goal) return undefined;
+    
+    // Auto-update status to completed if target reached
+    let status = goal.status;
+    if (currentAmount >= goal.targetAmount && status === "active") {
+      status = "completed";
+    }
+    
+    // Update the goal
+    const [updatedGoal] = await db
+      .update(carbonReductionGoals)
+      .set({ 
+        currentAmount, 
+        status,
+        updatedAt: new Date() 
+      })
+      .where(eq(carbonReductionGoals.id, id))
+      .returning();
+    
+    return updatedGoal;
+  }
+
+  async updateCarbonReductionGoalStatus(id: number, status: string): Promise<CarbonReductionGoal | undefined> {
+    const [updatedGoal] = await db
+      .update(carbonReductionGoals)
+      .set({ 
+        status, 
+        updatedAt: new Date() 
+      })
+      .where(eq(carbonReductionGoals.id, id))
+      .returning();
+    
+    return updatedGoal;
   }
 }
 
