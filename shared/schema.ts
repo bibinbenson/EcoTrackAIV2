@@ -84,6 +84,38 @@ export const insertUserAchievementSchema = createInsertSchema(userAchievements).
   id: true
 });
 
+// Eco-friendly rewards that users can earn through achievements
+export const ecoRewards = pgTable("eco_rewards", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  imageUrl: text("image_url"),
+  pointCost: integer("point_cost").notNull(),
+  rewardType: text("reward_type").notNull(), // e.g., "discount", "donation", "digital_asset"
+  partnerName: text("partner_name"),
+  isActive: boolean("is_active").default(true).notNull(),
+  expiryDate: timestamp("expiry_date")
+});
+
+export const insertEcoRewardSchema = createInsertSchema(ecoRewards).omit({
+  id: true
+});
+
+// User's earned and redeemed rewards
+export const userRewards = pgTable("user_rewards", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  rewardId: integer("reward_id").notNull(),
+  dateEarned: timestamp("date_earned").notNull(),
+  isRedeemed: boolean("is_redeemed").default(false).notNull(),
+  redeemedDate: timestamp("redeemed_date"),
+  redemptionCode: text("redemption_code")
+});
+
+export const insertUserRewardSchema = createInsertSchema(userRewards).omit({
+  id: true
+});
+
 // Sustainability tips
 export const sustainabilityTips = pgTable("sustainability_tips", {
   id: serial("id").primaryKey(),
@@ -245,7 +277,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   userAchievements: many(userAchievements),
   offsetPurchases: many(offsetPurchases),
   supplierAssessments: many(supplierAssessments),
-  supplyChainRisks: many(supplyChainRisks)
+  supplyChainRisks: many(supplyChainRisks),
+  userRewards: many(userRewards)
 }));
 
 export const categoriesRelations = relations(categories, ({ many }) => ({
@@ -341,6 +374,21 @@ export const supplyChainRisksRelations = relations(supplyChainRisks, ({ one }) =
   responsibleUser: one(users, {
     fields: [supplyChainRisks.responsibleUserId],
     references: [users.id]
+  })
+}));
+
+export const ecoRewardsRelations = relations(ecoRewards, ({ many }) => ({
+  userRewards: many(userRewards)
+}));
+
+export const userRewardsRelations = relations(userRewards, ({ one }) => ({
+  user: one(users, {
+    fields: [userRewards.userId],
+    references: [users.id]
+  }),
+  reward: one(ecoRewards, {
+    fields: [userRewards.rewardId],
+    references: [ecoRewards.id]
   })
 }));
 
@@ -445,3 +493,9 @@ export type InsertSupplierAssessment = z.infer<typeof insertSupplierAssessmentSc
 
 export type SupplyChainRisk = typeof supplyChainRisks.$inferSelect;
 export type InsertSupplyChainRisk = z.infer<typeof insertSupplyChainRiskSchema>;
+
+export type EcoReward = typeof ecoRewards.$inferSelect;
+export type InsertEcoReward = z.infer<typeof insertEcoRewardSchema>;
+
+export type UserReward = typeof userRewards.$inferSelect;
+export type InsertUserReward = z.infer<typeof insertUserRewardSchema>;

@@ -12,7 +12,10 @@ import {
   insertSupplierEmissionsSchema,
   insertSupplierAssessmentSchema,
   insertSupplyChainRiskSchema,
-  insertCarbonReductionGoalSchema
+  insertCarbonReductionGoalSchema,
+  insertEcoRewardSchema,
+  insertUserRewardSchema,
+  insertAchievementSchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
