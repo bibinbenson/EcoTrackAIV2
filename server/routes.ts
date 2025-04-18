@@ -171,6 +171,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const achievements = await storage.getAllAchievements();
     return res.json(achievements);
   });
+  
+  app.post("/api/achievements", async (req: Request, res: Response) => {
+    try {
+      const achievementData = insertAchievementSchema.parse(req.body);
+      const achievement = await storage.createAchievement(achievementData);
+      return res.status(201).json(achievement);
+    } catch (error) {
+      console.error("Error creating achievement:", error);
+      return res.status(400).json({ message: "Invalid achievement data", error });
+    }
+  });
 
   app.get("/api/user-achievements", async (req: Request, res: Response) => {
     const userId = 1; // For simplicity, use fixed user
@@ -295,7 +306,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const purchases = await storage.getUserOffsetPurchases(userId);
     
     // Get project details to include with purchases
-    const projectIds = [...new Set(purchases.map(p => p.projectId))];
+    const projectIds = Array.from(new Set(purchases.map(p => p.projectId)));
     const projectDetails = await Promise.all(
       projectIds.map(id => storage.getOffsetProject(id))
     );
@@ -484,7 +495,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const risks = await storage.getHighPriorityRisks();
     
     // Get supplier details to include in response
-    const supplierIds = [...new Set(risks.map(r => r.supplierId))];
+    const supplierIds = Array.from(new Set(risks.map(r => r.supplierId)));
     const suppliers = await Promise.all(
       supplierIds.map(id => storage.getSupplier(id))
     );
@@ -640,6 +651,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating goal status:", error);
       return res.status(400).json({ message: "Invalid status update", error });
+    }
+  });
+
+  // Eco-rewards routes
+  app.get("/api/eco-rewards", async (_req: Request, res: Response) => {
+    const rewards = await storage.getAllEcoRewards();
+    return res.json(rewards);
+  });
+
+  app.get("/api/eco-rewards/:id", async (req: Request, res: Response) => {
+    const rewardId = parseInt(req.params.id);
+    const reward = await storage.getEcoReward(rewardId);
+    
+    if (!reward) {
+      return res.status(404).json({ message: "Eco-reward not found" });
+    }
+    
+    return res.json(reward);
+  });
+  
+  app.post("/api/eco-rewards", async (req: Request, res: Response) => {
+    try {
+      const rewardData = insertEcoRewardSchema.parse(req.body);
+      const reward = await storage.createEcoReward(rewardData);
+      return res.status(201).json(reward);
+    } catch (error) {
+      console.error("Error creating eco-reward:", error);
+      return res.status(400).json({ message: "Invalid eco-reward data", error });
+    }
+  });
+
+  app.get("/api/user-rewards", async (req: Request, res: Response) => {
+    const userId = 1; // For simplicity, use fixed user
+    const userRewards = await storage.getUserRewards(userId);
+    
+    // Get reward details to include with user rewards
+    const rewardIds = Array.from(new Set(userRewards.map(r => r.rewardId)));
+    const rewardDetails = await Promise.all(
+      rewardIds.map(id => storage.getEcoReward(id))
+    );
+    
+    const rewardMap = new Map(
+      rewardDetails
+        .filter(r => r !== undefined)
+        .map(r => [r!.id, r])
+    );
+    
+    const result = userRewards.map(ur => ({
+      ...ur,
+      reward: rewardMap.get(ur.rewardId)
+    }));
+    
+    return res.json(result);
+  });
+
+  app.post("/api/user-rewards", async (req: Request, res: Response) => {
+    try {
+      // For simplicity, force userId to 1
+      const userRewardData = {
+        ...req.body,
+        userId: 1,
+        dateEarned: new Date()
+      };
+      
+      const validatedData = insertUserRewardSchema.parse(userRewardData);
+      const userReward = await storage.createUserReward(validatedData);
+      return res.status(201).json(userReward);
+    } catch (error) {
+      console.error("Error creating user reward:", error);
+      return res.status(400).json({ message: "Invalid user reward data", error });
+    }
+  });
+
+  app.patch("/api/user-rewards/:id/redeem", async (req: Request, res: Response) => {
+    try {
+      const userRewardId = parseInt(req.params.id);
+      const userId = 1; // For simplicity, use fixed user
+      
+      const updatedUserReward = await storage.redeemUserReward(userRewardId, userId);
+      
+      if (!updatedUserReward) {
+        return res.status(404).json({ message: "User reward not found" });
+      }
+      
+      return res.json(updatedUserReward);
+    } catch (error) {
+      return res.status(400).json({ message: "Error redeeming reward", error });
     }
   });
 

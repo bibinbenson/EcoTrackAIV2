@@ -12,7 +12,9 @@ import {
   supplierEmissions, SupplierEmission, InsertSupplierEmission,
   supplierAssessments, SupplierAssessment, InsertSupplierAssessment,
   supplyChainRisks, SupplyChainRisk, InsertSupplyChainRisk,
-  carbonReductionGoals, CarbonReductionGoal, InsertCarbonReductionGoal
+  carbonReductionGoals, CarbonReductionGoal, InsertCarbonReductionGoal,
+  ecoRewards, EcoReward, InsertEcoReward,
+  userRewards, UserReward, InsertUserReward
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, between, count, sum } from "drizzle-orm";
