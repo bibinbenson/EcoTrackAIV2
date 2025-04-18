@@ -187,9 +187,8 @@ export default function CarbonCalculator() {
   
   // Update estimate when form values change
   useEffect(() => {
-    if (form.formState.isValid) {
-      calculateEstimate();
-    }
+    // Calculate estimates regardless of validation state
+    calculateEstimate();
   }, [formValues, activityType]);
   
   // Reset form when activity type changes
@@ -281,15 +280,35 @@ export default function CarbonCalculator() {
   });
 
   const onSubmit = (data: any) => {
-    if (carbonEstimate === null) {
+    // Check for description before submitting
+    if (!data.description || data.description.length < 3) {
       toast({
-        title: "Cannot submit activity",
-        description: "Please complete the form to get a carbon estimate first.",
+        title: "Missing description",
+        description: "Please provide a brief description for this activity.",
         variant: "destructive"
       });
       return;
     }
     
+    // Ensure we have a carbon estimate
+    if (carbonEstimate === null) {
+      // Calculate estimate one more time to ensure it exists
+      calculateEstimate();
+      
+      if (carbonEstimate === null) {
+        toast({
+          title: "Cannot calculate carbon footprint",
+          description: "Please complete the form with valid values to get a carbon estimate.",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+    
+    // Add proper categoryId to data
+    data.categoryId = getCategoryId();
+    
+    // Submit the activity
     submitActivity.mutate(data);
   };
 
@@ -639,7 +658,7 @@ export default function CarbonCalculator() {
             <Button 
               type="submit"
               className="w-full"
-              disabled={!form.formState.isValid || submitActivity.isPending}
+              disabled={submitActivity.isPending}
             >
               {submitActivity.isPending ? "Logging Activity..." : "Log This Activity"}
             </Button>
