@@ -16,6 +16,7 @@ import Profile from "@/pages/profile";
 import NotFound from "@/pages/not-found";
 import Goals from "@/pages/goals";
 import Rewards from "@/pages/rewards";
+import Analytics from "@/pages/analytics";
 
 // Supply Chain pages
 import Suppliers from "@/pages/suppliers";
@@ -35,6 +36,7 @@ function Router() {
       <Route path="/profile" component={Profile} />
       <Route path="/goals" component={Goals} />
       <Route path="/rewards" component={Rewards} />
+      <Route path="/analytics" component={Analytics} />
       
       {/* Supply Chain Routes */}
       <Route path="/suppliers" component={Suppliers} />

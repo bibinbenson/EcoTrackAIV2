@@ -172,8 +172,18 @@ function ProjectDetails({ projectId }: { projectId: number }) {
   // Calculate total cost
   const totalCost = project.pricePerTon * offsetAmount;
   
+  // Add purchase confirmation dialog
   return (
     <>
+      {/* Purchase confirmation dialog */}
+      <PurchaseConfirmationDialog
+        isOpen={isPurchaseComplete}
+        setIsOpen={setIsPurchaseComplete}
+        project={project}
+        amount={offsetAmount}
+        cost={totalCost}
+      />
+      
       <div className="mb-6">
         <Link href="/marketplace">
           <Button variant="ghost" size="sm" className="mb-4">
@@ -350,7 +360,7 @@ function ProjectDetails({ projectId }: { projectId: number }) {
                     });
                     
                     if (response.ok) {
-                      alert('Purchase successful! You have offset ' + offsetAmount + ' tons of CO₂.');
+                      setIsPurchaseComplete(true);
                     } else {
                       throw new Error('Failed to complete purchase');
                     }
