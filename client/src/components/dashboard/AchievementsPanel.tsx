@@ -8,7 +8,8 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Leaf, Award, Bike } from "lucide-react";
+import { Leaf, Award, Bike, Share2 } from "lucide-react";
+import { SocialShare } from "@/components/SocialShare";
 
 export default function AchievementsPanel() {
   const { data: achievements, isLoading } = useQuery({
@@ -49,12 +50,28 @@ export default function AchievementsPanel() {
           {getAchievementIcon(achievement.achievement.iconName)}
         </div>
         <div className="ml-3 flex-1">
-          <h4 className="text-sm font-medium text-neutral-800">
-            {achievement.achievement.name}
-          </h4>
-          <p className="text-xs text-neutral-600">
-            {achievement.achievement.description}
-          </p>
+          <div className="flex justify-between items-start">
+            <div>
+              <h4 className="text-sm font-medium text-neutral-800">
+                {achievement.achievement.name}
+              </h4>
+              <p className="text-xs text-neutral-600">
+                {achievement.achievement.description}
+              </p>
+            </div>
+            
+            {isComplete && (
+              <SocialShare
+                title={`I earned the ${achievement.achievement.name} achievement!`}
+                text={`I just earned the "${achievement.achievement.name}" achievement on EcoTrack: ${achievement.achievement.description}`}
+                triggerElement={
+                  <Button variant="ghost" size="icon" className="h-6 w-6 -mt-1">
+                    <Share2 className="h-3.5 w-3.5" />
+                  </Button>
+                }
+              />
+            )}
+          </div>
           
           {!isComplete && (
             <>

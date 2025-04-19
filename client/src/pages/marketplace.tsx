@@ -3,6 +3,7 @@ import { useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import OffsetList from "@/components/marketplace/OffsetList";
+import { PurchaseConfirmationDialog } from "@/components/marketplace/PurchaseConfirmationDialog";
 import { 
   Card, 
   CardContent, 
@@ -114,6 +115,7 @@ function MarketplaceList() {
 
 function ProjectDetails({ projectId }: { projectId: number }) {
   const [offsetAmount, setOffsetAmount] = useState(1);
+  const [isPurchaseComplete, setIsPurchaseComplete] = useState(false);
   
   // Fetch project details
   const { data: project, isLoading } = useQuery({
