@@ -24,8 +24,12 @@ import {
   Share2,
   Download,
   Settings,
-  ChevronRight
+  ChevronRight,
+  Edit,
+  Image,
+  Shield
 } from "lucide-react";
+import { SocialShare } from "@/components/SocialShare";
 import { formatDate } from "@/lib/utils";
 
 export default function Profile() {
@@ -86,10 +90,16 @@ export default function Profile() {
             <Settings className="mr-2 h-4 w-4" />
             Account Settings
           </Button>
-          <Button>
-            <Share2 className="mr-2 h-4 w-4" />
-            Share Profile
-          </Button>
+          <SocialShare 
+            title={`Check out my EcoTrack profile!`}
+            text={`I've earned ${getCompletedAchievementsCount()} achievements and logged ${getActivitiesCount()} activities on my sustainability journey.`}
+            triggerElement={
+              <Button>
+                <Share2 className="mr-2 h-4 w-4" />
+                Share Profile
+              </Button>
+            }
+          />
         </div>
       </div>
       
@@ -149,7 +159,17 @@ export default function Profile() {
               </div>
             </CardContent>
             
-            <CardFooter className="border-t pt-4 flex justify-center">
+            <CardFooter className="border-t pt-4 flex flex-col gap-2">
+              <div className="flex justify-between w-full">
+                <Button variant="outline" size="sm" className="flex-1 mr-2">
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit Profile
+                </Button>
+                <Button variant="outline" size="sm" className="flex-1">
+                  <Image className="mr-2 h-4 w-4" />
+                  Change Photo
+                </Button>
+              </div>
               <Button variant="outline" className="w-full">
                 <Download className="mr-2 h-4 w-4" />
                 Export My Data
@@ -203,6 +223,67 @@ export default function Profile() {
                   <div>
                     <p className="text-sm text-neutral-600">Member Since</p>
                     <p className="font-medium text-neutral-800">June 2023</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Privacy Settings */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg font-bold text-neutral-800">
+                Privacy & Preferences
+              </CardTitle>
+              <CardDescription>
+                Control your profile settings
+              </CardDescription>
+            </CardHeader>
+            
+            <CardContent className="pt-4">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 mr-3">
+                      <Shield className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-neutral-800">Public Profile</p>
+                      <p className="text-xs text-neutral-500">Allow others to view your profile</p>
+                    </div>
+                  </div>
+                  <div className="form-control">
+                    <input type="checkbox" className="h-4 w-4" defaultChecked />
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
+                      <Award className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-neutral-800">Show Achievements</p>
+                      <p className="text-xs text-neutral-500">Display achievements on public profile</p>
+                    </div>
+                  </div>
+                  <div className="form-control">
+                    <input type="checkbox" className="h-4 w-4" defaultChecked />
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 mr-3">
+                      <Share2 className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-neutral-800">Social Sharing</p>
+                      <p className="text-xs text-neutral-500">Allow automatic social media sharing</p>
+                    </div>
+                  </div>
+                  <div className="form-control">
+                    <input type="checkbox" className="h-4 w-4" />
                   </div>
                 </div>
               </div>

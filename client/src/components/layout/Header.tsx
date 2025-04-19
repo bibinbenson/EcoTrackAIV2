@@ -7,6 +7,7 @@ import { Menu } from "lucide-react";
 // Header navigation items
 const navItems = [
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/analytics", label: "Analytics" },
   { href: "/calculator", label: "Calculator" },
   { href: "/goals", label: "Goals" },
   { href: "/learn", label: "Learn" },
