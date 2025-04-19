@@ -586,12 +586,23 @@ export default function Profile() {
                                 <div className="h-12 w-12 flex-shrink-0 flex items-center justify-center rounded-full bg-green-100 text-green-600">
                                   <Award className="h-6 w-6" />
                                 </div>
-                                <div className="ml-3">
-                                  <div className="flex items-center">
-                                    <h4 className="font-medium text-neutral-800">
-                                      {achievement.achievement.name}
-                                    </h4>
-                                    <Badge className="ml-2 bg-green-100 text-green-700">Completed</Badge>
+                                <div className="ml-3 flex-1">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center">
+                                      <h4 className="font-medium text-neutral-800">
+                                        {achievement.achievement.name}
+                                      </h4>
+                                      <Badge className="ml-2 bg-green-100 text-green-700">Completed</Badge>
+                                    </div>
+                                    <SocialShare
+                                      title={`I earned the ${achievement.achievement.name} achievement!`}
+                                      text={`I just earned the "${achievement.achievement.name}" achievement on EcoTrack: ${achievement.achievement.description}`}
+                                      triggerElement={
+                                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                                          <Share2 className="h-4 w-4" />
+                                        </Button>
+                                      }
+                                    />
                                   </div>
                                   <p className="text-sm text-neutral-600">
                                     {achievement.achievement.description}

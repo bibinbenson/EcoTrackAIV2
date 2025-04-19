@@ -109,13 +109,13 @@ export default function Dashboard() {
           {/* Featured Offset Projects */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Simplified Offset List with limit */}
-            <Link href="/marketplace">
-              <div className="col-span-3 text-center mt-8">
+            <div className="col-span-3 text-center mt-8">
+              <Link href="/marketplace">
                 <button className="bg-white hover:bg-neutral-50 border border-primary text-primary px-6 py-3 rounded-lg font-medium transition-colors">
                   Explore All Offset Projects
                 </button>
-              </div>
-            </Link>
+              </Link>
+            </div>
           </div>
         </div>
       </section>
