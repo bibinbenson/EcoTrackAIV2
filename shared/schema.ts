@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, real, jsonb, date } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, real, jsonb, date, decimal } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
@@ -390,6 +390,221 @@ export const supplyChainRisksRelations = relations(supplyChainRisks, ({ one }) =
   })
 }));
 
+// ESG Trading Platform models
+export const esgCompanies = pgTable("esg_companies", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  ticker: text("ticker").notNull().unique(),
+  description: text("description").notNull(),
+  sector: text("sector").notNull(),
+  industry: text("industry").notNull(),
+  logoUrl: text("logo_url"),
+  websiteUrl: text("website_url"),
+  marketCap: decimal("market_cap", { precision: 20, scale: 2 }),
+  environmentalScore: integer("environmental_score"), // 0-100
+  socialScore: integer("social_score"), // 0-100
+  governanceScore: integer("governance_score"), // 0-100
+  esgRating: text("esg_rating"), // e.g. "AAA", "BBB", etc.
+  carbonIntensity: real("carbon_intensity"), // tons CO2e per million $ revenue
+  netZeroTarget: integer("net_zero_target"), // target year or null if no target
+  sdgsAddressed: text("sdgs_addressed").array(), // Sustainable Development Goals addressed
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+export const insertEsgCompanySchema = createInsertSchema(esgCompanies).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export const esgSecurities = pgTable("esg_securities", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull(),
+  securityType: text("security_type").notNull(), // "stock", "bond", "etf", "fund"
+  ticker: text("ticker").notNull().unique(),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  currentPrice: decimal("current_price", { precision: 12, scale: 4 }).notNull(),
+  currency: text("currency").default("USD").notNull(),
+  yield: decimal("yield", { precision: 6, scale: 2 }),
+  risk: text("risk").notNull(), // "low", "medium", "high"
+  minimumInvestment: decimal("minimum_investment", { precision: 12, scale: 2 }),
+  sustainabilityFocus: text("sustainability_focus").array(), // e.g. ["renewable energy", "water conservation"]
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+export const insertEsgSecuritySchema = createInsertSchema(esgSecurities).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export const esgPortfolios = pgTable("esg_portfolios", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  totalValue: decimal("total_value", { precision: 16, scale: 2 }).default("0").notNull(),
+  totalCarbon: decimal("total_carbon", { precision: 16, scale: 2 }).default("0").notNull(), // tons CO2e
+  averageEsgScore: decimal("average_esg_score", { precision: 5, scale: 2 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+export const insertEsgPortfolioSchema = createInsertSchema(esgPortfolios).omit({
+  id: true,
+  totalValue: true,
+  totalCarbon: true,
+  averageEsgScore: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export const esgPortfolioHoldings = pgTable("esg_portfolio_holdings", {
+  id: serial("id").primaryKey(),
+  portfolioId: integer("portfolio_id").notNull(),
+  securityId: integer("security_id").notNull(),
+  shares: decimal("shares", { precision: 16, scale: 6 }).notNull(),
+  purchasePrice: decimal("purchase_price", { precision: 12, scale: 4 }).notNull(),
+  purchaseDate: timestamp("purchase_date").notNull(),
+  currentValue: decimal("current_value", { precision: 16, scale: 2 }).notNull(),
+  carbonFootprint: decimal("carbon_footprint", { precision: 16, scale: 2 }), // tons CO2e
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+export const insertEsgPortfolioHoldingSchema = createInsertSchema(esgPortfolioHoldings).omit({
+  id: true,
+  currentValue: true,
+  carbonFootprint: true,
+  createdAt: true,
+  updatedAt: true
+}).extend({
+  purchaseDate: z.preprocess(
+    (arg) => {
+      if (typeof arg === 'string' || arg instanceof Date) return new Date(arg);
+      return undefined;
+    },
+    z.date()
+  )
+});
+
+export const esgMarketData = pgTable("esg_market_data", {
+  id: serial("id").primaryKey(),
+  securityId: integer("security_id").notNull(),
+  date: timestamp("date").notNull(),
+  openPrice: decimal("open_price", { precision: 12, scale: 4 }).notNull(),
+  highPrice: decimal("high_price", { precision: 12, scale: 4 }).notNull(),
+  lowPrice: decimal("low_price", { precision: 12, scale: 4 }).notNull(),
+  closePrice: decimal("close_price", { precision: 12, scale: 4 }).notNull(),
+  volume: integer("volume").notNull(),
+  marketCap: decimal("market_cap", { precision: 20, scale: 2 }),
+  news: jsonb("news"), // Recent news affecting price
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+export const insertEsgMarketDataSchema = createInsertSchema(esgMarketData).omit({
+  id: true,
+  createdAt: true
+}).extend({
+  date: z.preprocess(
+    (arg) => {
+      if (typeof arg === 'string' || arg instanceof Date) return new Date(arg);
+      return undefined;
+    },
+    z.date()
+  )
+});
+
+export const esgTransactions = pgTable("esg_transactions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  portfolioId: integer("portfolio_id").notNull(),
+  securityId: integer("security_id").notNull(),
+  type: text("type").notNull(), // "buy", "sell"
+  shares: decimal("shares", { precision: 16, scale: 6 }).notNull(),
+  pricePerShare: decimal("price_per_share", { precision: 12, scale: 4 }).notNull(),
+  totalAmount: decimal("total_amount", { precision: 16, scale: 2 }).notNull(),
+  fees: decimal("fees", { precision: 10, scale: 2 }).default("0").notNull(),
+  date: timestamp("date").notNull(),
+  status: text("status").default("completed").notNull(), // "pending", "completed", "cancelled"
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+export const insertEsgTransactionSchema = createInsertSchema(esgTransactions).omit({
+  id: true,
+  totalAmount: true,
+  createdAt: true
+}).extend({
+  date: z.preprocess(
+    (arg) => {
+      if (typeof arg === 'string' || arg instanceof Date) return new Date(arg);
+      return undefined;
+    },
+    z.date()
+  )
+});
+
+// ESG Trading Platform Relations
+export const esgCompaniesRelations = relations(esgCompanies, ({ many }) => ({
+  securities: many(esgSecurities)
+}));
+
+export const esgSecuritiesRelations = relations(esgSecurities, ({ one, many }) => ({
+  company: one(esgCompanies, {
+    fields: [esgSecurities.companyId],
+    references: [esgCompanies.id]
+  }),
+  marketData: many(esgMarketData),
+  portfolioHoldings: many(esgPortfolioHoldings),
+  transactions: many(esgTransactions)
+}));
+
+export const esgPortfoliosRelations = relations(esgPortfolios, ({ one, many }) => ({
+  user: one(users, {
+    fields: [esgPortfolios.userId],
+    references: [users.id]
+  }),
+  holdings: many(esgPortfolioHoldings),
+  transactions: many(esgTransactions)
+}));
+
+export const esgPortfolioHoldingsRelations = relations(esgPortfolioHoldings, ({ one }) => ({
+  portfolio: one(esgPortfolios, {
+    fields: [esgPortfolioHoldings.portfolioId],
+    references: [esgPortfolios.id]
+  }),
+  security: one(esgSecurities, {
+    fields: [esgPortfolioHoldings.securityId],
+    references: [esgSecurities.id]
+  })
+}));
+
+export const esgMarketDataRelations = relations(esgMarketData, ({ one }) => ({
+  security: one(esgSecurities, {
+    fields: [esgMarketData.securityId],
+    references: [esgSecurities.id]
+  })
+}));
+
+export const esgTransactionsRelations = relations(esgTransactions, ({ one }) => ({
+  user: one(users, {
+    fields: [esgTransactions.userId],
+    references: [users.id]
+  }),
+  portfolio: one(esgPortfolios, {
+    fields: [esgTransactions.portfolioId],
+    references: [esgPortfolios.id]
+  }),
+  security: one(esgSecurities, {
+    fields: [esgTransactions.securityId],
+    references: [esgSecurities.id]
+  })
+}));
+
 export const ecoRewardsRelations = relations(ecoRewards, ({ many }) => ({
   userRewards: many(userRewards)
 }));
@@ -583,3 +798,22 @@ export type InsertErrorLog = z.infer<typeof insertErrorLogSchema>;
 
 export type UserActivityLog = typeof userActivity.$inferSelect;
 export type InsertUserActivityLog = z.infer<typeof insertUserActivitySchema>;
+
+// ESG Trading Platform types
+export type EsgCompany = typeof esgCompanies.$inferSelect;
+export type InsertEsgCompany = z.infer<typeof insertEsgCompanySchema>;
+
+export type EsgSecurity = typeof esgSecurities.$inferSelect;
+export type InsertEsgSecurity = z.infer<typeof insertEsgSecuritySchema>;
+
+export type EsgPortfolio = typeof esgPortfolios.$inferSelect;
+export type InsertEsgPortfolio = z.infer<typeof insertEsgPortfolioSchema>;
+
+export type EsgPortfolioHolding = typeof esgPortfolioHoldings.$inferSelect;
+export type InsertEsgPortfolioHolding = z.infer<typeof insertEsgPortfolioHoldingSchema>;
+
+export type EsgMarketData = typeof esgMarketData.$inferSelect;
+export type InsertEsgMarketData = z.infer<typeof insertEsgMarketDataSchema>;
+
+export type EsgTransaction = typeof esgTransactions.$inferSelect;
+export type InsertEsgTransaction = z.infer<typeof insertEsgTransactionSchema>;
