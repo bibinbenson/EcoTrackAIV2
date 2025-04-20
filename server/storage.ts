@@ -34,10 +34,15 @@ export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUserScore(id: number, newScore: number): Promise<User | undefined>;
+  updateUserLastLogin(id: number, lastLogin: Date): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
   getTopUsers(limit: number): Promise<User[]>;
+  
+  // Session store
+  sessionStore: any;
   
   // Achievement tracking operations
   getUserActivityCount(userId: number): Promise<number>;
@@ -181,6 +186,8 @@ export interface IStorage {
 
 // In-memory implementation of storage
 export class MemStorage implements IStorage {
+  public sessionStore: any;
+  
   private users: Map<number, User>;
   private categories: Map<number, Category>;
   private activities: Map<number, Activity>;
