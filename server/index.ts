@@ -1,7 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { initializeDefaultData as seedData } from "./seeders/index";
+// Fix import to use the correct function name
+import { seedData } from "./seeders/index";
 
 const app = express();
 app.use(express.json());
