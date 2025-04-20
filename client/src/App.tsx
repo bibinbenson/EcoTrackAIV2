@@ -19,6 +19,7 @@ import Rewards from "@/pages/rewards";
 import Achievements from "@/pages/achievements";
 import Analytics from "@/pages/analytics";
 import ESGTrading from "@/pages/esg-trading";
+import AdvancedCarbonCalculator from "@/pages/advanced-carbon-calculator";
 
 // Supply Chain pages
 import Suppliers from "@/pages/suppliers";
@@ -31,6 +32,7 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/calculator" component={Calculator} />
+      <Route path="/advanced-carbon-calculator" component={AdvancedCarbonCalculator} />
       <Route path="/learn" component={Learn} />
       <Route path="/marketplace" component={Marketplace} />
       <Route path="/marketplace/:id" component={Marketplace} />

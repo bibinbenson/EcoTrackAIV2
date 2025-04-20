@@ -2,6 +2,8 @@ import SimpleActivityForm from "@/components/calculator/SimpleActivityForm";
 import AdvancedCalculator from "@/components/calculator/AdvancedCalculator";
 import RecentActivities from "@/components/activity/RecentActivities";
 import SustainabilityTip from "@/components/education/SustainabilityTip";
+import { Link } from "wouter";
+import { ArrowRight } from "lucide-react";
 
 export default function Calculator() {
   return (

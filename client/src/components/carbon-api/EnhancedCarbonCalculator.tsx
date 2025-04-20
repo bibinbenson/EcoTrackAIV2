@@ -425,7 +425,7 @@ export default function EnhancedCarbonCalculator() {
                       {Object.entries(breakdown.activitySpecificFactors).map(([key, value]) => (
                         <div key={key} className="flex justify-between border-b pb-1">
                           <span className="text-sm">{key}</span>
-                          <span className="text-sm font-mono">{value}</span>
+                          <span className="text-sm font-mono">{String(value)}</span>
                         </div>
                       ))}
                     </div>
@@ -438,7 +438,7 @@ export default function EnhancedCarbonCalculator() {
                     <Lightbulb size={16} className="mr-2 text-amber-500" /> Reduction Suggestions
                   </h3>
                   <ul className="space-y-2">
-                    {breakdown.suggestions.map((suggestion, index) => (
+                    {breakdown.suggestions.map((suggestion: string, index: number) => (
                       <li key={index} className="flex items-start">
                         <Leaf className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
                         <span className="text-sm">{suggestion}</span>
