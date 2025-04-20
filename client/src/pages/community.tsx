@@ -203,18 +203,26 @@ export default function Community() {
                         </div>
                         
                         <img 
-                          className="h-10 w-10 rounded-full ml-2" 
-                          src={user.avatarUrl || `https://ui-avatars.com/api/?name=${user.firstName}+${user.lastName}&background=random`} 
-                          alt={`${user.firstName} ${user.lastName}`}
+                          className="h-10 w-10 rounded-full ml-2 border-2 border-white shadow-sm" 
+                          src={user.avatarUrl || `https://ui-avatars.com/api/?name=${user.firstName || 'User'}+${user.lastName || ''}&background=random&color=fff&size=128`} 
+                          alt={(user.firstName && user.lastName) ? `${user.firstName} ${user.lastName}` : user.username || 'User'}
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = `https://ui-avatars.com/api/?name=User&background=random&color=fff`;
+                          }}
                         />
                         
                         <div className="ml-3 flex-1">
-                          <p className="font-medium text-neutral-800">
-                            {isCurrentUser ? (
-                              <span className="font-bold">You</span>
-                            ) : (
-                              `${user.firstName} ${user.lastName}`
-                            )}
+                          <div className="flex items-center">
+                            <p className="font-medium text-neutral-800">
+                              {isCurrentUser ? (
+                                <span className="font-bold">You</span>
+                              ) : (
+                                (user.firstName && user.lastName) ? 
+                                `${user.firstName} ${user.lastName}` : 
+                                user.username || "Anonymous User"
+                              )}
+                            </p>
                             
                             {position <= 3 && (
                               <Badge 
@@ -228,7 +236,7 @@ export default function Community() {
                                 {position === 1 ? "Gold" : position === 2 ? "Silver" : "Bronze"}
                               </Badge>
                             )}
-                          </p>
+                          </div>
                           <p className="text-sm text-neutral-600">
                             {Math.floor(Math.random() * 100) + 1} activities tracked
                           </p>
@@ -245,12 +253,12 @@ export default function Community() {
             </CardContent>
             
             <CardFooter className="border-t pt-4">
-              <p className="text-sm text-neutral-600">
-                Scores are calculated based on your carbon reduction actions and activity tracking.
+              <div className="flex items-center gap-1 text-sm text-neutral-600">
+                <span>Scores are calculated based on your carbon reduction actions and activity tracking.</span>
                 <Button variant="link" className="h-auto p-0 text-sm" onClick={() => {}}>
                   Learn how scoring works
                 </Button>
-              </p>
+              </div>
             </CardFooter>
           </Card>
         </div>
