@@ -26,8 +26,11 @@ import {
   esgMarketData, EsgMarketData, InsertEsgMarketData,
   esgTransactions, EsgTransaction, InsertEsgTransaction
 } from "@shared/schema";
-import { db } from "./db";
+import { db, pool } from "./db";
 import { eq, and, desc, between, count, sum } from "drizzle-orm";
+import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
+import createMemoryStore from "memorystore";
 
 // Interface for storage operations
 export interface IStorage {
@@ -229,6 +232,12 @@ export class MemStorage implements IStorage {
   private userActivityLogCurrentId: number;
 
   constructor() {
+    // Initialize session store
+    const MemoryStore = createMemoryStore(session);
+    this.sessionStore = new MemoryStore({
+      checkPeriod: 86400000 // prune expired entries every 24h
+    });
+    
     this.users = new Map();
     this.categories = new Map();
     this.activities = new Map();
@@ -536,6 +545,24 @@ export class MemStorage implements IStorage {
     return Array.from(this.users.values()).find(
       (user) => user.username === username,
     );
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(
+      (user) => user.email === email,
+    );
+  }
+
+  async updateUserLastLogin(id: number, lastLogin: Date): Promise<User | undefined> {
+    const user = await this.getUser(id);
+    if (!user) {
+      return undefined;
+    }
+    
+    user.lastLogin = lastLogin;
+    this.users.set(id, user);
+    
+    return { ...user };
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
@@ -1405,6 +1432,19 @@ export class MemStorage implements IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  public sessionStore: any;
+
+  constructor() {
+    // Initialize session store with PostgreSQL
+    const PostgresSessionStore = connectPgSimple(session);
+    
+    this.sessionStore = new PostgresSessionStore({
+      pool,
+      createTableIfMissing: true,
+      tableName: 'session'
+    });
+  }
+
   // User operations
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
@@ -1415,10 +1455,24 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db.select().from(users).where(eq(users.username, username));
     return user;
   }
+  
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db.insert(users).values(insertUser).returning();
     return user;
+  }
+  
+  async updateUserLastLogin(id: number, lastLogin: Date): Promise<User | undefined> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ lastLogin })
+      .where(eq(users.id, id))
+      .returning();
+    return updatedUser;
   }
   
   // Eco-Reward operations

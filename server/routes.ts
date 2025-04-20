@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { z } from "zod";
 import { AchievementProcessor } from "./achievementProcessor";
 import { carbonApiService } from "./services/carbonApiService";
+import { setupAuth } from "./auth";
 import {
   insertUserSchema,
   insertActivitySchema,
@@ -24,6 +25,9 @@ import {
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Set up authentication routes
+  const { isAuthenticated } = setupAuth(app);
+  
   // All routes are prefixed with /api
   
   // User routes
