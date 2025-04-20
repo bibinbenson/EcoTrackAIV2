@@ -1357,7 +1357,9 @@ export class MemStorage implements IStorage {
     const newErrorLog: ErrorLog = {
       ...errorLog,
       id,
-      timestamp: new Date()
+      createdAt: new Date(),
+      resolved: false,
+      resolution: null
     };
     this.errorLogs.set(id, newErrorLog);
     return newErrorLog;
@@ -1365,7 +1367,7 @@ export class MemStorage implements IStorage {
   
   async getErrorLogs(): Promise<ErrorLog[]> {
     return Array.from(this.errorLogs.values())
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
   
   // User analytics operations
