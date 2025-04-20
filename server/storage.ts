@@ -38,6 +38,12 @@ export interface IStorage {
   getUserConsecutiveDays(userId: number): Promise<number>;
   getUserCarbonReduction(userId: number): Promise<number>;
   getUserMonthlyReductionPercentage(userId: number): Promise<number>;
+  
+  // Beta user operations
+  createUserFeedback(feedback: InsertUserFeedback): Promise<UserFeedback>;
+  getUserFeedback(userId: number): Promise<UserFeedback[]>;
+  updateUserBetaFeedbackStatus(userId: number, provided: boolean): Promise<User | undefined>;
+  updateUserOnboardingStatus(userId: number, completed: boolean): Promise<User | undefined>;
 
   // Category operations
   getCategory(id: number): Promise<Category | undefined>;
@@ -2202,10 +2208,7 @@ DatabaseStorage.prototype.createUserActivityLog = async function(
 ): Promise<UserActivityLog> {
   const [newLog] = await db
     .insert(userActivity)
-    .values({
-      ...activityLog,
-      timestamp: new Date()
-    })
+    .values(activityLog)
     .returning();
   return newLog;
 };
@@ -2217,7 +2220,7 @@ DatabaseStorage.prototype.getUserActivityLogs = async function(
     .select()
     .from(userActivity)
     .where(eq(userActivity.userId, userId))
-    .orderBy(desc(userActivity.timestamp));
+    .orderBy(desc(userActivity.createdAt));
 };
 
 // Export an instance of the DatabaseStorage

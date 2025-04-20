@@ -3,6 +3,9 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 // Fix import to use the correct function name
 import { seedData } from "./seeders/index";
+// Import method implementations for DatabaseStorage
+import "./achievementMethods";
+import "./betaMethods";
 
 const app = express();
 app.use(express.json());
