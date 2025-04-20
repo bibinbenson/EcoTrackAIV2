@@ -639,6 +639,92 @@ export class MemStorage implements IStorage {
     this.userAchievements.set(key, updatedUserAchievement);
     return updatedUserAchievement;
   }
+  
+  // Achievement tracking methods
+  async getUserActivityCount(userId: number): Promise<number> {
+    return Array.from(this.activities.values())
+      .filter(activity => activity.userId === userId)
+      .length;
+  }
+
+  async getUserActivityCountByCategory(userId: number, categoryId: number): Promise<number> {
+    return Array.from(this.activities.values())
+      .filter(activity => activity.userId === userId && activity.categoryId === categoryId)
+      .length;
+  }
+
+  async getUserConsecutiveDays(userId: number): Promise<number> {
+    // Get all user activities
+    const userActivities = Array.from(this.activities.values())
+      .filter(activity => activity.userId === userId)
+      .sort((a, b) => b.date.getTime() - a.date.getTime());
+    
+    if (userActivities.length === 0) return 0;
+    
+    // Count consecutive days
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const activityDays = new Set<string>();
+    
+    // Add all activity dates to a set
+    userActivities.forEach(activity => {
+      const date = new Date(activity.date);
+      date.setHours(0, 0, 0, 0);
+      activityDays.add(date.toISOString().split('T')[0]);
+    });
+    
+    // Count backwards from today to find consecutive days
+    let consecutiveDays = 0;
+    const checkDate = new Date(today);
+    
+    while (true) {
+      const dateStr = checkDate.toISOString().split('T')[0];
+      
+      if (activityDays.has(dateStr)) {
+        consecutiveDays++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+    
+    return consecutiveDays;
+  }
+
+  async getUserCarbonReduction(userId: number): Promise<number> {
+    // Calculate the total carbon savings
+    // For simplicity, we'll assume each activity with negative carbon values represents savings
+    return Array.from(this.activities.values())
+      .filter(activity => activity.userId === userId && activity.carbonAmount < 0)
+      .reduce((total, activity) => total + Math.abs(activity.carbonAmount), 0);
+  }
+
+  async getUserMonthlyReductionPercentage(userId: number): Promise<number> {
+    // Calculate reduction % by comparing this month to previous month
+    const today = new Date();
+    
+    // Current month range
+    const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const currentMonthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    
+    // Previous month range
+    const previousMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const previousMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+    
+    // Get carbon footprints for both months
+    const currentMonthFootprint = await this.getUserCarbonFootprint(userId, currentMonthStart, currentMonthEnd);
+    const previousMonthFootprint = await this.getUserCarbonFootprint(userId, previousMonthStart, previousMonthEnd);
+    
+    // If no previous month data, return 0
+    if (previousMonthFootprint === 0) return 0;
+    
+    // Calculate reduction percentage
+    const reductionPercentage = ((previousMonthFootprint - currentMonthFootprint) / previousMonthFootprint) * 100;
+    
+    // Return 0 if reduction is negative (i.e., increase)
+    return Math.max(0, reductionPercentage);
+  }
 
   // Sustainability Tip operations
   async getSustainabilityTip(id: number): Promise<SustainabilityTip | undefined> {
