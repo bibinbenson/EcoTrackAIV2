@@ -688,6 +688,22 @@ export class MemStorage implements IStorage {
     return updatedUserAchievement;
   }
   
+  async updateUserAchievement(id: number, data: Partial<UserAchievement>): Promise<UserAchievement | undefined> {
+    const userAchievement = Array.from(this.userAchievements.values()).find(ua => ua.id === id);
+    
+    if (!userAchievement) return undefined;
+    
+    const updatedUserAchievement: UserAchievement = {
+      ...userAchievement,
+      progress: data.progress !== undefined ? data.progress : userAchievement.progress,
+      isCompleted: data.isCompleted !== undefined ? data.isCompleted : userAchievement.isCompleted,
+      dateEarned: data.dateEarned || userAchievement.dateEarned
+    };
+    
+    this.userAchievements.set(`${userAchievement.userId}-${userAchievement.achievementId}`, updatedUserAchievement);
+    return updatedUserAchievement;
+  }
+  
   // Achievement tracking methods
   async getUserActivityCount(userId: number): Promise<number> {
     return Array.from(this.activities.values())
@@ -2108,6 +2124,100 @@ DatabaseStorage.prototype.updateUserAchievement = async function(
     .returning();
   
   return updatedUserAchievement;
+};
+
+// Beta user operations
+DatabaseStorage.prototype.createUserFeedback = async function(
+  feedback: InsertUserFeedback
+): Promise<UserFeedback> {
+  const [newFeedback] = await db
+    .insert(userFeedback)
+    .values({
+      ...feedback,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    })
+    .returning();
+  return newFeedback;
+};
+
+DatabaseStorage.prototype.getUserFeedback = async function(
+  userId: number
+): Promise<UserFeedback[]> {
+  return db
+    .select()
+    .from(userFeedback)
+    .where(eq(userFeedback.userId, userId))
+    .orderBy(desc(userFeedback.createdAt));
+};
+
+DatabaseStorage.prototype.updateUserBetaFeedbackStatus = async function(
+  userId: number, 
+  provided: boolean
+): Promise<User | undefined> {
+  const [updatedUser] = await db
+    .update(users)
+    .set({ betaFeedbackProvided: provided })
+    .where(eq(users.id, userId))
+    .returning();
+  return updatedUser;
+};
+
+DatabaseStorage.prototype.updateUserOnboardingStatus = async function(
+  userId: number, 
+  completed: boolean
+): Promise<User | undefined> {
+  const [updatedUser] = await db
+    .update(users)
+    .set({ 
+      onboardingCompleted: completed,
+      lastLogin: new Date()
+    })
+    .where(eq(users.id, userId))
+    .returning();
+  return updatedUser;
+};
+
+// Error tracking operations
+DatabaseStorage.prototype.createErrorLog = async function(
+  errorLog: InsertErrorLog
+): Promise<ErrorLog> {
+  const [newErrorLog] = await db
+    .insert(errorLogs)
+    .values(errorLog)
+    .returning();
+  return newErrorLog;
+};
+
+DatabaseStorage.prototype.getErrorLogs = async function(): Promise<ErrorLog[]> {
+  return db
+    .select()
+    .from(errorLogs)
+    .orderBy(desc(errorLogs.createdAt));
+};
+
+// User analytics operations
+DatabaseStorage.prototype.createUserActivityLog = async function(
+  activityLog: InsertUserActivityLog
+): Promise<UserActivityLog> {
+  const [newLog] = await db
+    .insert(userActivity)
+    .values({
+      ...activityLog,
+      timestamp: new Date()
+    })
+    .returning();
+  return newLog;
+};
+
+DatabaseStorage.prototype.getUserActivityLogs = async function(
+  userId: number
+): Promise<UserActivityLog[]> {
+  return db
+    .select()
+    .from(userActivity)
+    .where(eq(userActivity.userId, userId))
+    .orderBy(desc(userActivity.timestamp));
 };
 
 // Export an instance of the DatabaseStorage
