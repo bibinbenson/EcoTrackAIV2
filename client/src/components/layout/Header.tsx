@@ -54,15 +54,18 @@ export default function Header({ currentPath }: HeaderProps) {
   const isSupplyChainActive = supplyChainItems.some(item => currentPath === item.href);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const supplyChainContainerRef = useRef<HTMLDivElement>(null);
+
+  // Handle both hover and click for Supply Chain dropdown
+  const handleSupplyChainMouseEnter = () => setSupplyChainOpen(true);
+  const handleSupplyChainMouseLeave = () => setSupplyChainOpen(false);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
-        dropdownRef.current && 
-        buttonRef.current && 
-        !dropdownRef.current.contains(event.target as Node) && 
-        !buttonRef.current.contains(event.target as Node)
+        supplyChainContainerRef.current && 
+        !supplyChainContainerRef.current.contains(event.target as Node)
       ) {
         setSupplyChainOpen(false);
       }
@@ -161,7 +164,12 @@ export default function Header({ currentPath }: HeaderProps) {
             ))}
             
             {/* Supply Chain Navigation - Desktop */}
-            <div className="relative">
+            <div 
+              className="relative"
+              ref={supplyChainContainerRef}
+              onMouseEnter={handleSupplyChainMouseEnter}
+              onMouseLeave={handleSupplyChainMouseLeave}
+            >
               <button
                 ref={buttonRef}
                 className={`px-3 py-1.5 rounded-md flex items-center text-sm font-medium cursor-pointer transition-colors whitespace-nowrap border-0 bg-transparent ${
@@ -179,27 +187,29 @@ export default function Header({ currentPath }: HeaderProps) {
               </button>
               
               {/* Supply Chain Dropdown - Desktop */}
-              {supplyChainOpen && (
-                <div 
-                  ref={dropdownRef}
-                  className="absolute left-0 mt-1 w-44 bg-white rounded-md shadow-lg py-1 z-10 border border-neutral-100"
-                  role="menu"
-                >
-                  {supplyChainItems.map((item) => (
-                    <Link key={item.href} href={item.href}>
-                      <div 
-                        className={`block px-4 py-1.5 text-sm flex items-center text-neutral-700 hover:bg-neutral-50 cursor-pointer ${
-                          currentPath === item.href ? "bg-primary/5 text-primary font-medium" : ""
-                        }`}
-                        role="menuitem"
-                      >
-                        <span className="mr-2">{item.icon}</span>
-                        {item.label}
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              )}
+              <div 
+                ref={dropdownRef}
+                className={`absolute left-0 mt-1 w-48 bg-white rounded-md shadow-lg py-1 z-10 border border-neutral-100 transition-all duration-150 origin-top-left ${
+                  supplyChainOpen 
+                    ? "opacity-100 scale-100 translate-y-0" 
+                    : "opacity-0 scale-95 -translate-y-2 pointer-events-none"
+                }`}
+                role="menu"
+              >
+                {supplyChainItems.map((item) => (
+                  <Link key={item.href} href={item.href}>
+                    <div 
+                      className={`block px-4 py-2 text-sm flex items-center text-neutral-700 hover:bg-neutral-50 hover:text-primary transition-colors cursor-pointer ${
+                        currentPath === item.href ? "bg-primary/5 text-primary font-medium" : ""
+                      }`}
+                      role="menuitem"
+                    >
+                      <span className="mr-2">{item.icon}</span>
+                      {item.label}
+                    </div>
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
           
