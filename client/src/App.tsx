@@ -6,6 +6,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import Header from "./components/layout/Header";
 import Footer from "./components/layout/Footer";
+import { AuthProvider } from "@/hooks/use-auth";
+import { ProtectedRoute } from "@/lib/protected-route";
 
 import Dashboard from "@/pages/dashboard";
 import Calculator from "@/pages/calculator";
@@ -20,6 +22,7 @@ import Achievements from "@/pages/achievements";
 import Analytics from "@/pages/analytics";
 import ESGTrading from "@/pages/esg-trading";
 import AdvancedCarbonCalculator from "@/pages/advanced-carbon-calculator";
+import AuthPage from "@/pages/auth-page";
 
 // Supply Chain pages
 import Suppliers from "@/pages/suppliers";
@@ -33,29 +36,33 @@ import Feedback from "@/pages/feedback";
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/calculator" component={Calculator} />
-      <Route path="/advanced-carbon-calculator" component={AdvancedCarbonCalculator} />
-      <Route path="/learn" component={Learn} />
-      <Route path="/marketplace" component={Marketplace} />
-      <Route path="/marketplace/:id" component={Marketplace} />
-      <Route path="/community" component={Community} />
-      <Route path="/profile" component={Profile} />
-      <Route path="/goals" component={Goals} />
-      <Route path="/rewards" component={Rewards} />
-      <Route path="/achievements" component={Achievements} />
-      <Route path="/analytics" component={Analytics} />
-      <Route path="/esg-trading" component={ESGTrading} />
+      {/* Public auth route */}
+      <Route path="/auth" component={AuthPage} />
       
-      {/* Supply Chain Routes */}
-      <Route path="/suppliers" component={Suppliers} />
-      <Route path="/supplier-emissions" component={SupplierEmissions} />
-      <Route path="/supply-chain-risks" component={SupplyChainRisks} />
+      {/* Protected routes */}
+      <ProtectedRoute path="/" component={Dashboard} />
+      <ProtectedRoute path="/dashboard" component={Dashboard} />
+      <ProtectedRoute path="/calculator" component={Calculator} />
+      <ProtectedRoute path="/advanced-carbon-calculator" component={AdvancedCarbonCalculator} />
+      <ProtectedRoute path="/learn" component={Learn} />
+      <ProtectedRoute path="/marketplace" component={Marketplace} />
+      <ProtectedRoute path="/marketplace/:id" component={Marketplace} />
+      <ProtectedRoute path="/community" component={Community} />
+      <ProtectedRoute path="/profile" component={Profile} />
+      <ProtectedRoute path="/goals" component={Goals} />
+      <ProtectedRoute path="/rewards" component={Rewards} />
+      <ProtectedRoute path="/achievements" component={Achievements} />
+      <ProtectedRoute path="/analytics" component={Analytics} />
+      <ProtectedRoute path="/esg-trading" component={ESGTrading} />
       
-      {/* Beta-specific Routes */}
-      <Route path="/onboarding" component={Onboarding} />
-      <Route path="/feedback" component={Feedback} />
+      {/* Protected Supply Chain Routes */}
+      <ProtectedRoute path="/suppliers" component={Suppliers} />
+      <ProtectedRoute path="/supplier-emissions" component={SupplierEmissions} />
+      <ProtectedRoute path="/supply-chain-risks" component={SupplyChainRisks} />
+      
+      {/* Protected Beta-specific Routes */}
+      <ProtectedRoute path="/onboarding" component={Onboarding} />
+      <ProtectedRoute path="/feedback" component={Feedback} />
       
       <Route component={NotFound} />
     </Switch>
@@ -69,14 +76,17 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="light">
         <TooltipProvider>
-          <div className="min-h-screen flex flex-col">
-            <Header currentPath={location} />
-            <main className="flex-grow">
-              <Router />
-            </main>
-            <Footer />
-            <Toaster />
-          </div>
+          <AuthProvider>
+            <div className="min-h-screen flex flex-col">
+              {/* Only show header and footer for authenticated routes */}
+              {location !== "/auth" && <Header currentPath={location} />}
+              <main className={`flex-grow ${location === "/auth" ? "p-0" : ""}`}>
+                <Router />
+              </main>
+              {location !== "/auth" && <Footer />}
+              <Toaster />
+            </div>
+          </AuthProvider>
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>
