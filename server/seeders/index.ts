@@ -1,8 +1,11 @@
 import { seedAchievements } from './achievementSeeder';
 import { seedRewards } from './rewardSeeder';
 
-export async function seedDatabase() {
-  console.log("Starting database seeding...");
+/**
+ * Initialize all default data for the application
+ */
+export async function initializeDefaultData() {
+  console.log('Starting database seeding...');
   
   try {
     // Seed achievements
@@ -11,8 +14,8 @@ export async function seedDatabase() {
     // Seed rewards
     await seedRewards();
     
-    console.log("Database seeding completed successfully!");
+    console.log('Database seeding completed successfully!');
   } catch (error) {
-    console.error("Error during database seeding:", error);
+    console.error('Error during database seeding:', error);
   }
 }

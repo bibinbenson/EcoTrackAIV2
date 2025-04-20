@@ -1916,5 +1916,29 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
+// Add achievement tracking methods to DatabaseStorage prototype
+import { databaseAchievementTracking } from './databaseAchievementTracking';
+
+// Add the achievement tracking methods to the DatabaseStorage prototype
+DatabaseStorage.prototype.getUserActivityCount = async function(userId: number): Promise<number> {
+  return databaseAchievementTracking.getUserActivityCount(userId);
+};
+
+DatabaseStorage.prototype.getUserActivityCountByCategory = async function(userId: number, categoryId: number): Promise<number> {
+  return databaseAchievementTracking.getUserActivityCountByCategory(userId, categoryId);
+};
+
+DatabaseStorage.prototype.getUserConsecutiveDays = async function(userId: number): Promise<number> {
+  return databaseAchievementTracking.getUserConsecutiveDays(userId);
+};
+
+DatabaseStorage.prototype.getUserCarbonReduction = async function(userId: number): Promise<number> {
+  return databaseAchievementTracking.getUserCarbonReduction(userId);
+};
+
+DatabaseStorage.prototype.getUserMonthlyReductionPercentage = async function(userId: number): Promise<number> {
+  return databaseAchievementTracking.getUserMonthlyReductionPercentage(userId, this);
+};
+
 // Export an instance of the DatabaseStorage
 export const storage = new DatabaseStorage();

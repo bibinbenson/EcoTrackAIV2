@@ -1,8 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { initializeDefaultData } from "./db";
-import { seedDatabase } from "./seeders";
+import { initializeDefaultData as seedData } from "./seeders/index";
 
 const app = express();
 app.use(express.json());
@@ -39,11 +38,8 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Initialize default data in the database
-  await initializeDefaultData();
-  
-  // Seed achievements and rewards
-  await seedDatabase();
+  // Initialize default data in the database - achieve and rewards seeding 
+  await seedData();
   
   const server = await registerRoutes(app);
 
