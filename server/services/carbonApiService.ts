@@ -2,7 +2,14 @@ import OpenAI from "openai";
 import { CarbonActivity, CarbonCategory } from "@shared/schema";
 
 // The newest OpenAI model is "gpt-4o" which was released May 13, 2024. Do not change this unless explicitly requested by the user
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+let openai: OpenAI | null = null;
+
+// Initialize OpenAI client if API key is available
+if (process.env.OPENAI_API_KEY) {
+  openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+} else {
+  console.warn("OPENAI_API_KEY is not set. Carbon calculation services will use fallback values.");
+}
 
 interface EmissionFactorResponse {
   emissionFactor: number;
