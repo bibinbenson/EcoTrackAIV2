@@ -41,6 +41,16 @@ export class CarbonApiService {
     unit: string
   ): Promise<EmissionFactorResponse> {
     try {
+      if (!openai) {
+        console.warn('OpenAI API key not configured, using fallback values');
+        return {
+          emissionFactor: this.getFallbackEmissionFactor(category),
+          unit: `kgCO2e/${unit}`,
+          confidence: 0.3,
+          source: "Internal database fallback",
+          notes: "Using conservative estimate due to missing API configuration"
+        };
+      }
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
@@ -75,7 +85,7 @@ export class CarbonApiService {
       return JSON.parse(content) as EmissionFactorResponse;
     } catch (error) {
       console.error("Error getting emission factor from OpenAI:", error);
-      
+
       // Return a fallback with low confidence
       return {
         emissionFactor: this.getFallbackEmissionFactor(category),
@@ -98,6 +108,22 @@ export class CarbonApiService {
     category: CarbonCategory
   ): Promise<CarbonActivityDetails> {
     try {
+      if (!openai) {
+        console.warn('OpenAI API key not configured, using fallback values');
+        return {
+          scope1: Math.round(activity.carbonAmount * 0.3 * 100) / 100,
+          scope2: Math.round(activity.carbonAmount * 0.2 * 100) / 100,
+          scope3: Math.round(activity.carbonAmount * 0.5 * 100) / 100,
+          totalEmissions: activity.carbonAmount,
+          unit: "kgCO2e",
+          activitySpecificFactors: {},
+          suggestions: [
+            "Consider more efficient alternatives for this activity",
+            "Reduce frequency when possible",
+            "Offset remaining emissions through verified projects"
+          ]
+        };
+      }
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
@@ -132,14 +158,14 @@ export class CarbonApiService {
 
       const content = response.choices[0].message.content || '{}';
       const result = JSON.parse(content) as CarbonActivityDetails;
-      
+
       // Ensure the total matches the provided carbon impact for consistency
       result.totalEmissions = activity.carbonAmount;
-      
+
       return result;
     } catch (error) {
       console.error("Error getting detailed carbon breakdown from OpenAI:", error);
-      
+
       // Return a fallback with estimated scope breakdowns
       return {
         scope1: Math.round(activity.carbonAmount * 0.3 * 100) / 100,
@@ -170,6 +196,16 @@ export class CarbonApiService {
     estimatedCarbonImpact: number;
   }> {
     try {
+      if (!openai) {
+        console.warn('OpenAI API key not configured, using fallback values');
+        return {
+          enhancedDescription: description,
+          estimatedCategory: "Transport",
+          estimatedQuantity: 10,
+          estimatedUnit: "km",
+          estimatedCarbonImpact: 2.5
+        };
+      }
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
@@ -200,7 +236,7 @@ export class CarbonApiService {
       return JSON.parse(content);
     } catch (error) {
       console.error("Error analyzing carbon activity:", error);
-      
+
       // Return a basic fallback
       return {
         enhancedDescription: description,
