@@ -14,46 +14,33 @@ import {
   ShoppingBag,
   Users,
   TrendingUp,
-  Truck
+  Truck,
+  BarChart2,
+  Home,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 
-// Organize navigation items into logical groups
-const navGroups = [
-  {
-    name: "Core",
-    items: [
-      { href: "/dashboard", label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4 mr-2" /> },
-      { href: "/calculator", label: "Calculator", icon: <Calculator className="h-4 w-4 mr-2" /> },
-      { href: "/goals", label: "Goals", icon: <Target className="h-4 w-4 mr-2" /> }
-    ]
-  },
-  {
-    name: "Engagement",
-    items: [
-      { href: "/achievements", label: "Achievements", icon: <Award className="h-4 w-4 mr-2" /> },
-      { href: "/rewards", label: "Rewards", icon: <Gift className="h-4 w-4 mr-2" /> }
-    ]
-  },
-  {
-    name: "Platform",
-    items: [
-      { href: "/learn", label: "Learn", icon: <BookOpen className="h-4 w-4 mr-2" /> },
-      { href: "/marketplace", label: "Marketplace", icon: <ShoppingBag className="h-4 w-4 mr-2" /> },
-      { href: "/community", label: "Community", icon: <Users className="h-4 w-4 mr-2" /> },
-      { href: "/esg-trading", label: "ESG Trading", icon: <TrendingUp className="h-4 w-4 mr-2" /> }
-    ]
-  }
+// Define all navigation items with icons
+const navItems = [
+  { href: "/dashboard", label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" />, category: "Core" },
+  { href: "/calculator", label: "Calculator", icon: <Calculator className="h-4 w-4" />, category: "Core" },
+  { href: "/goals", label: "Goals", icon: <Target className="h-4 w-4" />, category: "Core" },
+  { href: "/achievements", label: "Achievements", icon: <Award className="h-4 w-4" />, category: "Engagement" },
+  { href: "/rewards", label: "Rewards", icon: <Gift className="h-4 w-4" />, category: "Engagement" },
+  { href: "/learn", label: "Learn", icon: <BookOpen className="h-4 w-4" />, category: "Platform" },
+  { href: "/marketplace", label: "Marketplace", icon: <ShoppingBag className="h-4 w-4" />, category: "Platform" },
+  { href: "/community", label: "Community", icon: <Users className="h-4 w-4" />, category: "Platform" },
+  { href: "/esg-trading", label: "ESG Trading", icon: <TrendingUp className="h-4 w-4" />, category: "Platform" },
+  { href: "/analytics", label: "Analytics", icon: <BarChart2 className="h-4 w-4" />, category: "Data" }
 ];
 
 // Supply chain navigation items
 const supplyChainItems = [
-  { href: "/suppliers", label: "Suppliers" },
-  { href: "/supplier-emissions", label: "Emissions" },
-  { href: "/supply-chain-risks", label: "Risks" }
+  { href: "/suppliers", label: "Suppliers", icon: <Truck className="h-4 w-4" /> },
+  { href: "/supplier-emissions", label: "Emissions", icon: <Truck className="h-4 w-4" /> },
+  { href: "/supply-chain-risks", label: "Risks", icon: <Truck className="h-4 w-4" /> }
 ];
-
-// Flatten all navigation items for mobile view
-const allNavItems = navGroups.flatMap(group => group.items);
 
 interface HeaderProps {
   currentPath: string;
@@ -62,6 +49,8 @@ interface HeaderProps {
 export default function Header({ currentPath }: HeaderProps) {
   const [supplyChainOpen, setSupplyChainOpen] = useState(false);
   const [mobileSupplyChainOpen, setMobileSupplyChainOpen] = useState(false);
+  const [navScrollPosition, setNavScrollPosition] = useState(0);
+  const navScrollRef = useRef<HTMLDivElement>(null);
   const isSupplyChainActive = supplyChainItems.some(item => currentPath === item.href);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLDivElement>(null);
@@ -83,53 +72,106 @@ export default function Header({ currentPath }: HeaderProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Calculate if we can scroll left or right
+  const canScrollLeft = navScrollPosition > 0;
+  const canScrollRight = navScrollRef.current ? 
+    navScrollRef.current.scrollWidth > navScrollRef.current.clientWidth + navScrollPosition : 
+    false;
+
+  // Handle scroll navigation
+  const handleScrollNav = (direction: 'left' | 'right') => {
+    if (!navScrollRef.current) return;
+    
+    const scrollAmount = 150;
+    const currentScroll = navScrollRef.current.scrollLeft;
+    
+    if (direction === 'left') {
+      navScrollRef.current.scrollTo({
+        left: Math.max(0, currentScroll - scrollAmount),
+        behavior: 'smooth'
+      });
+    } else {
+      navScrollRef.current.scrollTo({
+        left: currentScroll + scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  // Update scroll position state when scrolling
+  const handleScroll = () => {
+    if (navScrollRef.current) {
+      setNavScrollPosition(navScrollRef.current.scrollLeft);
+    }
+  };
+
+  useEffect(() => {
+    const scrollContainer = navScrollRef.current;
+    if (scrollContainer) {
+      scrollContainer.addEventListener('scroll', handleScroll);
+      return () => scrollContainer.removeEventListener('scroll', handleScroll);
+    }
+  }, []);
+
   return (
-    <header className="bg-white border-b border-neutral-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
+    <header className="bg-white sticky top-0 z-50 border-b border-neutral-200">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex justify-between items-center">
         <div className="flex items-center">
           <Link href="/dashboard">
             <div className="flex items-center cursor-pointer">
-              <svg className="h-7 w-7 text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+              <svg className="h-6 w-6 text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 16.95h-2v-9h2v9zm4 0h-2v-12h2v12z"/>
               </svg>
-              <h1 className="ml-2 text-lg font-bold text-neutral-800">EcoTrack</h1>
+              <h1 className="ml-1.5 text-lg font-bold text-neutral-800">EcoTrack</h1>
             </div>
           </Link>
         </div>
 
-        {/* Desktop navigation - horizontal center-aligned tabbed menu */}
-        <nav className="hidden md:flex items-center justify-center max-w-3xl mx-auto overflow-x-auto">
-          <div className="flex items-center space-x-1 px-1 border-b border-transparent py-1">
-            {navGroups.flatMap((group, groupIndex) => [
-              ...group.items.map((item) => (
-                <Link key={item.href} href={item.href}>
-                  <div className={`px-3 py-1.5 rounded-md flex items-center text-sm font-medium cursor-pointer transition-colors ${
-                    currentPath === item.href 
-                      ? "text-primary bg-primary/5 border-primary" 
-                      : "text-neutral-600 hover:text-primary hover:bg-neutral-50"
-                  }`}>
-                    {item.label}
-                  </div>
-                </Link>
-              )),
-              // Add separator between groups (except after the last group)
-              groupIndex < navGroups.length - 1 ? (
-                <div key={`separator-${groupIndex}`} className="h-6 w-px bg-neutral-200 mx-1"></div>
-              ) : null
-            ]).filter(Boolean)}
+        {/* Desktop navigation with scroll buttons */}
+        <div className="hidden md:flex items-center justify-center relative max-w-3xl mx-auto w-full">
+          {/* Left scroll button - only show if can scroll left */}
+          {canScrollLeft && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="absolute left-0 z-10 bg-white/80 border border-neutral-100 shadow-sm" 
+              onClick={() => handleScrollNav('left')}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+          )}
+          
+          {/* Scrollable navigation */}
+          <div 
+            ref={navScrollRef}
+            className="flex items-center space-x-1 px-8 border-b border-transparent py-1 overflow-x-auto scrollbar-hide"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {navItems.map((item) => (
+              <Link key={item.href} href={item.href}>
+                <div className={`px-3 py-1.5 rounded-md flex items-center text-sm font-medium cursor-pointer transition-colors whitespace-nowrap ${
+                  currentPath === item.href 
+                    ? "text-primary bg-primary/5" 
+                    : "text-neutral-600 hover:text-primary hover:bg-neutral-50"
+                }`}>
+                  <span className="mr-1.5">{item.icon}</span>
+                  {item.label}
+                </div>
+              </Link>
+            ))}
             
             {/* Supply Chain Navigation - Desktop */}
             <div className="relative">
               <div 
                 ref={buttonRef}
-                className={`px-3 py-1.5 rounded-md flex items-center text-sm font-medium cursor-pointer transition-colors ${
+                className={`px-3 py-1.5 rounded-md flex items-center text-sm font-medium cursor-pointer transition-colors whitespace-nowrap ${
                   isSupplyChainActive || supplyChainOpen
                     ? "text-primary bg-primary/5" 
                     : "text-neutral-600 hover:text-primary hover:bg-neutral-50"
                 }`}
                 onClick={() => setSupplyChainOpen(prev => !prev)}
               >
-                <Truck className="h-4 w-4 mr-1" />
+                <Truck className="h-4 w-4 mr-1.5" />
                 <span>Supply Chain</span>
                 <ChevronDown className={`ml-1 h-3.5 w-3.5 transition-transform ${supplyChainOpen ? 'transform rotate-180' : ''}`} />
               </div>
@@ -142,9 +184,10 @@ export default function Header({ currentPath }: HeaderProps) {
                 >
                   {supplyChainItems.map((item) => (
                     <Link key={item.href} href={item.href}>
-                      <div className={`block px-4 py-1.5 text-sm text-neutral-700 hover:bg-neutral-50 cursor-pointer ${
+                      <div className={`block px-4 py-1.5 text-sm flex items-center text-neutral-700 hover:bg-neutral-50 cursor-pointer ${
                         currentPath === item.href ? "bg-primary/5 text-primary font-medium" : ""
                       }`}>
+                        <span className="mr-2">{item.icon}</span>
                         {item.label}
                       </div>
                     </Link>
@@ -153,7 +196,19 @@ export default function Header({ currentPath }: HeaderProps) {
               )}
             </div>
           </div>
-        </nav>
+          
+          {/* Right scroll button - only show if can scroll right */}
+          {canScrollRight && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="absolute right-0 z-10 bg-white/80 border border-neutral-100 shadow-sm" 
+              onClick={() => handleScrollNav('right')}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
 
         <div className="flex items-center space-x-2">
           <Link href="/calculator">
@@ -183,56 +238,86 @@ export default function Header({ currentPath }: HeaderProps) {
               </Button>
             </SheetTrigger>
             <SheetContent side="right">
-              <div className="flex flex-col pt-4 pb-4 space-y-1">
-                <h3 className="font-semibold text-neutral-500 text-xs uppercase tracking-wider mb-2 px-3">
-                  Navigation
-                </h3>
-                {allNavItems.map((item) => (
-                  <Link key={item.href} href={item.href}>
-                    <div className={`px-3 py-2 rounded-md flex items-center text-sm font-medium cursor-pointer ${
-                      currentPath === item.href
-                        ? "bg-primary/10 text-primary"
-                        : "text-neutral-800 hover:bg-neutral-50"
-                    }`}>
-                      {item.icon}
-                      {item.label}
+              <div className="flex flex-col h-full">
+                <div className="py-4">
+                  <Link href="/dashboard">
+                    <div className="flex items-center mb-4 px-3">
+                      <svg className="h-6 w-6 text-primary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 16.95h-2v-9h2v9zm4 0h-2v-12h2v12z"/>
+                      </svg>
+                      <h2 className="ml-2 text-lg font-bold text-neutral-800">EcoTrack</h2>
                     </div>
                   </Link>
-                ))}
-                
-                {/* Supply Chain Items - Mobile */}
-                <div 
-                  className={`mt-2 px-3 py-2 rounded-md flex items-center justify-between font-medium cursor-pointer ${
-                    isSupplyChainActive ? "bg-primary/10 text-primary" : "text-neutral-800 hover:bg-neutral-50"
-                  }`}
-                  onClick={() => setMobileSupplyChainOpen(prev => !prev)}
-                >
-                  <div className="flex items-center">
-                    <Truck className="h-4 w-4 mr-2" />
-                    <span>Supply Chain</span>
+                  
+                  <div className="space-y-0.5">
+                    {/* Group navigation by category */}
+                    {['Core', 'Engagement', 'Platform', 'Data'].map(category => {
+                      const categoryItems = navItems.filter(item => item.category === category);
+                      if (categoryItems.length === 0) return null;
+                      
+                      return (
+                        <div key={category} className="mb-3">
+                          <h3 className="text-xs uppercase tracking-wider text-neutral-500 font-semibold mb-1 px-3">
+                            {category}
+                          </h3>
+                          {categoryItems.map(item => (
+                            <Link key={item.href} href={item.href}>
+                              <div className={`px-3 py-2 rounded-md flex items-center text-sm font-medium cursor-pointer ${
+                                currentPath === item.href
+                                  ? "bg-primary/10 text-primary"
+                                  : "text-neutral-800 hover:bg-neutral-50"
+                              }`}>
+                                <span className="mr-2">{item.icon}</span>
+                                {item.label}
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      );
+                    })}
+                    
+                    {/* Supply Chain Section */}
+                    <div className="mb-3">
+                      <h3 className="text-xs uppercase tracking-wider text-neutral-500 font-semibold mb-1 px-3">
+                        Supply Chain
+                      </h3>
+                      
+                      <div 
+                        className={`px-3 py-2 rounded-md flex items-center justify-between font-medium cursor-pointer ${
+                          isSupplyChainActive ? "bg-primary/10 text-primary" : "text-neutral-800 hover:bg-neutral-50"
+                        }`}
+                        onClick={() => setMobileSupplyChainOpen(prev => !prev)}
+                      >
+                        <div className="flex items-center">
+                          <Truck className="h-4 w-4 mr-2" />
+                          <span>Supply Chain</span>
+                        </div>
+                        <ChevronDown className={`h-4 w-4 transition-transform ${mobileSupplyChainOpen ? 'transform rotate-180' : ''}`} />
+                      </div>
+                      
+                      {mobileSupplyChainOpen && (
+                        <div className="ml-7 border-l border-neutral-200 pl-2 mt-1">
+                          {supplyChainItems.map((item) => (
+                            <Link key={item.href} href={item.href}>
+                              <div className={`px-3 py-2 rounded-md text-sm font-medium cursor-pointer ${
+                                currentPath === item.href
+                                  ? "bg-primary/10 text-primary"
+                                  : "text-neutral-700 hover:bg-neutral-50"
+                              }`}>
+                                {item.label}
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <ChevronDown className={`h-4 w-4 transition-transform ${mobileSupplyChainOpen ? 'transform rotate-180' : ''}`} />
                 </div>
                 
-                {mobileSupplyChainOpen && (
-                  <div className="ml-7 border-l border-neutral-200 pl-2">
-                    {supplyChainItems.map((item) => (
-                      <Link key={item.href} href={item.href}>
-                        <div className={`px-3 py-2 rounded-md text-sm font-medium cursor-pointer ${
-                          currentPath === item.href
-                            ? "bg-primary/10 text-primary"
-                            : "text-neutral-700 hover:bg-neutral-50"
-                        }`}>
-                          {item.label}
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-                
-                <div className="mt-4 px-3">
+                {/* Bottom Section with Log Activity button */}
+                <div className="mt-auto p-4 border-t border-neutral-200">
                   <Link href="/calculator">
-                    <Button variant="default" size="sm" className="w-full">
+                    <Button variant="default" className="w-full">
                       Log Activity
                     </Button>
                   </Link>

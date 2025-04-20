@@ -2,6 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom scrollbar hiding for better navigation appearance */
+@layer utilities {
+  .scrollbar-hide {
+    /* For Firefox */
+    scrollbar-width: none;
+    
+    /* For Chrome, Safari, and Opera */
+    &::-webkit-scrollbar {
+      display: none;
+    }
+    
+    /* For IE and Edge */
+    -ms-overflow-style: none;
+  }
+}
+
 @layer base {
   * {
     @apply border-border;
