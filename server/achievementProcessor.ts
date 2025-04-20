@@ -1,4 +1,4 @@
-import { storage } from './storage';
+import { storage, IStorage } from './storage';
 import { Achievement, UserAchievement, Activity } from '@shared/schema';
 
 /**

@@ -1923,10 +1923,22 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-// Add achievement tracking methods to DatabaseStorage prototype
+// Add achievement tracking methods directly to the DatabaseStorage class
+
+// These methods need to be added to the class definition
+interface DatabaseStorage {
+  getUserActivityCount(userId: number): Promise<number>;
+  getUserActivityCountByCategory(userId: number, categoryId: number): Promise<number>;
+  getUserConsecutiveDays(userId: number): Promise<number>;
+  getUserCarbonReduction(userId: number): Promise<number>;
+  getUserMonthlyReductionPercentage(userId: number): Promise<number>;
+  updateUserAchievement(id: number, data: Partial<UserAchievement>): Promise<UserAchievement | undefined>;
+}
+
+// Import the database achievement tracking methods
 import { databaseAchievementTracking } from './databaseAchievementTracking';
 
-// Add the achievement tracking methods to the DatabaseStorage prototype
+// Implement the achievement tracking methods
 DatabaseStorage.prototype.getUserActivityCount = async function(userId: number): Promise<number> {
   return databaseAchievementTracking.getUserActivityCount(userId);
 };
@@ -1955,9 +1967,9 @@ DatabaseStorage.prototype.updateUserAchievement = async function(
   const [updatedUserAchievement] = await db
     .update(userAchievements)
     .set({
-      progress: data.progress,
-      isCompleted: data.isCompleted,
-      dateEarned: data.dateEarned
+      progress: data.progress !== undefined ? data.progress : undefined,
+      isCompleted: data.isCompleted !== undefined ? data.isCompleted : undefined,
+      dateEarned: data.dateEarned !== undefined ? data.dateEarned : undefined
     })
     .where(eq(userAchievements.id, id))
     .returning();
