@@ -1,5 +1,6 @@
 import SimpleActivityForm from "@/components/calculator/SimpleActivityForm";
 import AdvancedCalculator from "@/components/calculator/AdvancedCalculator";
+import RecentActivities from "@/components/activity/RecentActivities";
 import SustainabilityTip from "@/components/education/SustainabilityTip";
 
 export default function Calculator() {
@@ -19,6 +20,10 @@ export default function Calculator() {
           
           <div className="mt-6">
             <AdvancedCalculator />
+          </div>
+          
+          <div className="mt-6">
+            <RecentActivities />
           </div>
         </div>
         
