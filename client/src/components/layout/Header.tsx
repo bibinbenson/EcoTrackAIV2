@@ -164,11 +164,10 @@ export default function Header({ currentPath }: HeaderProps) {
             ))}
             
             {/* Supply Chain Navigation - Desktop */}
-            <div 
-              className="relative"
-              ref={supplyChainContainerRef}
+            <div className="relative inline-block text-left"
               onMouseEnter={handleSupplyChainMouseEnter}
               onMouseLeave={handleSupplyChainMouseLeave}
+              ref={supplyChainContainerRef}
             >
               <button
                 ref={buttonRef}
@@ -189,7 +188,7 @@ export default function Header({ currentPath }: HeaderProps) {
               {/* Supply Chain Dropdown - Desktop */}
               <div 
                 ref={dropdownRef}
-                className={`absolute left-0 mt-1 w-48 bg-white rounded-md shadow-lg py-1 z-10 border border-neutral-100 ${
+                className={`absolute left-0 top-full mt-1 w-48 bg-white rounded-md shadow-lg py-1 z-20 border border-neutral-100 ${
                   supplyChainOpen ? "block" : "hidden"
                 }`}
                 role="menu"
