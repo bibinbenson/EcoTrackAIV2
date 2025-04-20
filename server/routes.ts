@@ -114,6 +114,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(400).json({ message: "Invalid activity data", error });
     }
   });
+  
+  // Delete an activity
+  app.delete("/api/activities/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid activity ID" });
+      }
+      
+      // Check if activity exists and belongs to the user
+      const activity = await storage.getActivity(id);
+      if (!activity) {
+        return res.status(404).json({ message: "Activity not found" });
+      }
+      
+      // Hard-coded userId for simplicity
+      if (activity.userId !== 1) {
+        return res.status(403).json({ message: "Forbidden: You don't have permission to delete this activity" });
+      }
+      
+      // Delete the activity
+      const success = await storage.deleteActivity(id);
+      if (!success) {
+        return res.status(404).json({ message: "Activity not found" });
+      }
+      
+      // Recalculate user score after deleting activity
+      const totalFootprint = await storage.getUserCarbonFootprint(1);
+      // Simple scoring: higher is better (less carbon)
+      const newScore = Math.max(0, 100 - Math.floor(totalFootprint / 10));
+      await storage.updateUserScore(1, newScore);
+      
+      return res.status(200).json({ message: "Activity deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting activity:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
 
   app.get("/api/carbon-footprint", async (req: Request, res: Response) => {
     const userId = 1; // For simplicity, use fixed user

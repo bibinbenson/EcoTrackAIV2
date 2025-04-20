@@ -39,6 +39,7 @@ export interface IStorage {
   getUserActivities(userId: number): Promise<Activity[]>;
   getRecentUserActivities(userId: number, limit: number): Promise<Activity[]>;
   createActivity(activity: InsertActivity): Promise<Activity>;
+  deleteActivity(id: number): Promise<boolean>;
   getUserCarbonFootprint(userId: number, startDate?: Date, endDate?: Date): Promise<number>;
   getUserCarbonByCategory(userId: number, startDate?: Date, endDate?: Date): Promise<{categoryId: number, totalCarbon: number}[]>;
 
@@ -540,6 +541,13 @@ export class MemStorage implements IStorage {
     const activity: Activity = { ...insertActivity, id };
     this.activities.set(id, activity);
     return activity;
+  }
+  
+  async deleteActivity(id: number): Promise<boolean> {
+    if (!this.activities.has(id)) {
+      return false;
+    }
+    return this.activities.delete(id);
   }
 
   async getUserCarbonFootprint(userId: number, startDate?: Date, endDate?: Date): Promise<number> {
