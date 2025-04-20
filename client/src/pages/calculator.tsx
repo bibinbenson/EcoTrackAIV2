@@ -30,6 +30,17 @@ export default function Calculator() {
         </div>
         
         <div className="space-y-6">
+          <div className="bg-blue-50 border border-blue-100 rounded-lg p-6 mb-6">
+            <h3 className="text-lg font-medium text-blue-800 mb-2">Try Our Advanced Calculator</h3>
+            <p className="text-sm text-neutral-700 mb-4">
+              Get more detailed carbon impact data using our AI-enhanced calculator with improved accuracy.
+            </p>
+            <Link href="/advanced-carbon-calculator" className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800">
+              Go to Advanced Calculator
+              <ArrowRight className="ml-1 h-4 w-4" />
+            </Link>
+          </div>
+          
           <div>
             <SustainabilityTip />
           </div>
