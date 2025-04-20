@@ -1,5 +1,5 @@
 import { storage } from './storage';
-import { Achievement, UserAchievement } from '@shared/schema';
+import { Achievement, UserAchievement, Activity } from '@shared/schema';
 
 /**
  * Class to handle achievement processing and progress tracking
@@ -106,6 +106,21 @@ export class AchievementProcessor {
       }
     } catch (error) {
       console.error(`Error processing achievements for user ${userId}:`, error);
+    }
+  }
+  
+  /**
+   * Process a newly created activity to check for achievements
+   * @param activity The activity that was created
+   * @param userId The user ID who created the activity
+   */
+  static async processActivity(activity: Activity, userId: number): Promise<void> {
+    try {
+      // Simply delegate to processUserAchievements
+      await this.processUserAchievements(userId);
+      console.log(`Processed achievements for activity: ${activity.id}`);
+    } catch (error) {
+      console.error('Error processing activity achievements:', error);
     }
   }
 }

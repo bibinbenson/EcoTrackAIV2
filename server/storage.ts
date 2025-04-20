@@ -28,6 +28,13 @@ export interface IStorage {
   updateUserScore(id: number, newScore: number): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
   getTopUsers(limit: number): Promise<User[]>;
+  
+  // Achievement tracking operations
+  getUserActivityCount(userId: number): Promise<number>;
+  getUserActivityCountByCategory(userId: number, categoryId: number): Promise<number>;
+  getUserConsecutiveDays(userId: number): Promise<number>;
+  getUserCarbonReduction(userId: number): Promise<number>;
+  getUserMonthlyReductionPercentage(userId: number): Promise<number>;
 
   // Category operations
   getCategory(id: number): Promise<Category | undefined>;
