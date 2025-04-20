@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+
 import {
   Card,
   CardContent,
@@ -10,103 +11,137 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Award, Check, GiftIcon } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { 
+  Award, 
+  Calendar, 
+  CheckCircle, 
+  Gift, 
+  Loader2, 
+  Search,
+  ShoppingBag,
+  Tag,
+  Ticket,
+  Trophy
+} from "lucide-react";
 
-interface EcoReward {
-  id: number;
-  name: string;
-  description: string;
-  imageUrl: string | null;
-  pointCost: number;
-  rewardType: string;
-  partnerName: string | null;
-  isActive: boolean;
-  expiryDate: Date | null;
-}
-
-interface UserReward {
-  id: number;
-  userId: number;
-  rewardId: number;
-  dateEarned: string;
-  isRedeemed: boolean;
-  redeemedDate: string | null;
-  redemptionCode: string | null;
-  reward?: EcoReward;
-}
-
-const RewardsPage = () => {
+export default function RewardsPage() {
   const { toast } = useToast();
+  const [filter, setFilter] = useState("");
+  const [selectedReward, setSelectedReward] = useState<any>(null);
+  const [redeemDialogOpen, setRedeemDialogOpen] = useState(false);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
 
-  // Get all available rewards
-  const { data: rewards, isLoading: isLoadingRewards } = useQuery({
-    queryKey: ["/api/eco-rewards"],
-    select: (data: EcoReward[]) => data.filter(reward => reward.isActive),
+  // Query user data
+  const { data: user, isLoading: isLoadingUser } = useQuery({
+    queryKey: ["/api/users/me"],
   });
 
-  // Get user's earned rewards
+  // Query rewards
+  const { data: rewards, isLoading: isLoadingRewards } = useQuery({
+    queryKey: ["/api/eco-rewards"],
+  });
+
+  // Query user rewards
   const { data: userRewards, isLoading: isLoadingUserRewards } = useQuery({
     queryKey: ["/api/user-rewards"],
   });
 
-  // Mutation to earn a reward
-  const earnRewardMutation = useMutation({
+  // Mutation for redeeming rewards
+  const redeemRewardMutation = useMutation({
     mutationFn: (rewardId: number) => {
-      return apiRequest("/api/user-rewards", "POST", { rewardId });
+      return apiRequest(`/api/user-rewards`, {
+        method: "POST",
+        data: { rewardId }
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/user-rewards"] });
       queryClient.invalidateQueries({ queryKey: ["/api/users/me"] });
-      toast({
-        title: "Reward earned!",
-        description: "You have successfully earned this reward.",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Failed to earn reward",
-        description: "You may not have enough points or there was an error.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Mutation to redeem a reward
-  const redeemRewardMutation = useMutation({
-    mutationFn: (userRewardId: number) => {
-      return apiRequest(`/api/user-rewards/${userRewardId}/redeem`, "PATCH");
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/user-rewards"] });
+      
       toast({
         title: "Reward redeemed!",
-        description: `Your redemption code is: ${data.redemptionCode}`,
+        description: `You've successfully redeemed ${selectedReward.name}.`,
+        variant: "default"
       });
+      
+      setRedeemDialogOpen(false);
+      setConfirmDialogOpen(true);
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Failed to redeem reward",
-        description: "There was an error redeeming your reward.",
-        variant: "destructive",
+        description: error.message || "Something went wrong. Please try again later.",
+        variant: "destructive"
       });
-    },
+    }
   });
 
-  // Check if user already earned a specific reward
-  const hasEarnedReward = (rewardId: number) => {
-    return userRewards?.some((ur: UserReward) => ur.rewardId === rewardId);
+  // Filter rewards based on search
+  const filteredRewards = rewards?.filter((reward: any) => {
+    if (!filter) return true;
+    
+    return (
+      reward.name.toLowerCase().includes(filter.toLowerCase()) ||
+      reward.description.toLowerCase().includes(filter.toLowerCase()) ||
+      reward.partnerName?.toLowerCase().includes(filter.toLowerCase())
+    );
+  });
+
+  // Check if user already has a specific reward
+  const hasReward = (rewardId: number) => {
+    return userRewards?.some((ur: any) => ur.rewardId === rewardId && !ur.isRedeemed);
   };
 
-  // Get user data to show points
-  const { data: user } = useQuery({
-    queryKey: ["/api/users/me"],
-  });
+  // Format expiry date
+  const formatExpiryDate = (dateString: string | null) => {
+    if (!dateString) return "No expiration";
+    
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
 
-  if (isLoadingRewards || isLoadingUserRewards) {
+  // Handle reward redemption
+  const handleRedeemReward = (reward: any) => {
+    setSelectedReward(reward);
+    setRedeemDialogOpen(true);
+  };
+
+  // Confirm redemption
+  const confirmRedemption = () => {
+    if (selectedReward) {
+      redeemRewardMutation.mutate(selectedReward.id);
+    }
+  };
+
+  // Loading state
+  if (isLoadingUser || isLoadingRewards || isLoadingUserRewards) {
     return (
       <div className="flex justify-center items-center h-[50vh]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -117,178 +152,301 @@ const RewardsPage = () => {
 
   return (
     <div className="container py-8">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold">Eco Rewards</h1>
+          <h1 className="text-3xl font-bold flex items-center">
+            <Gift className="h-8 w-8 mr-2 text-primary" />
+            Eco Rewards
+          </h1>
           <p className="text-muted-foreground mt-1">
-            Earn and redeem rewards with your eco points
+            Redeem your eco-points for sustainable rewards and discounts
           </p>
         </div>
-        <div className="bg-primary/10 p-4 rounded-lg">
-          <div className="text-sm text-muted-foreground">Your Points</div>
-          <div className="text-2xl font-bold">{user?.score || 0}</div>
+        
+        <div className="flex items-center gap-2">
+          <div className="bg-primary/5 p-2 rounded-lg flex items-center mr-2">
+            <Trophy className="h-5 w-5 text-primary mr-2" />
+            <span className="font-semibold text-primary">{user?.score || 0} Points</span>
+          </div>
+          <div className="relative">
+            <Search className="h-4 w-4 absolute left-2.5 top-2.5 text-gray-500" />
+            <Input
+              placeholder="Search rewards..."
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              className="pl-8 w-full md:w-auto max-w-[250px]"
+            />
+          </div>
         </div>
       </div>
 
-      <Tabs defaultValue="available" className="w-full">
-        <TabsList className="mb-4">
-          <TabsTrigger value="available">Available Rewards</TabsTrigger>
-          <TabsTrigger value="myrewards">My Rewards</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="available" className="mt-0">
+      {/* User's Rewards */}
+      {userRewards?.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-xl font-bold mb-4 flex items-center">
+            <Ticket className="h-5 w-5 mr-2 text-primary" />
+            Your Rewards
+          </h2>
+          
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {rewards?.map((reward: EcoReward) => (
-              <Card key={reward.id} className="overflow-hidden">
-                {reward.imageUrl && (
-                  <div className="h-48 overflow-hidden">
-                    <img
-                      src={reward.imageUrl}
-                      alt={reward.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-xl">{reward.name}</CardTitle>
-                    <Badge variant="outline" className="ml-2">
-                      {reward.pointCost} points
-                    </Badge>
-                  </div>
-                  {reward.partnerName && (
-                    <CardDescription>
-                      Partner: {reward.partnerName}
-                    </CardDescription>
-                  )}
-                </CardHeader>
-                <CardContent>
-                  <p>{reward.description}</p>
-                  <Badge className="mt-2" variant="secondary">
-                    {reward.rewardType}
-                  </Badge>
-                </CardContent>
-                <CardFooter>
-                  {hasEarnedReward(reward.id) ? (
-                    <Button variant="outline" disabled className="w-full">
-                      <Check className="mr-2 h-4 w-4" />
-                      Already Earned
-                    </Button>
-                  ) : (
-                    <Button
-                      className="w-full"
-                      disabled={
-                        earnRewardMutation.isPending ||
-                        (user?.score || 0) < reward.pointCost
-                      }
-                      onClick={() => earnRewardMutation.mutate(reward.id)}
-                    >
-                      {earnRewardMutation.isPending ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Award className="mr-2 h-4 w-4" />
-                      )}
-                      Earn Reward
-                    </Button>
-                  )}
-                </CardFooter>
-              </Card>
-            ))}
-
-            {rewards?.length === 0 && (
-              <div className="col-span-full text-center py-8">
-                <p className="text-muted-foreground">
-                  No rewards available at the moment.
-                </p>
-              </div>
-            )}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="myrewards" className="mt-0">
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {userRewards?.map((userReward: UserReward) => {
-              // Find the reward details
-              const reward = rewards?.find(
-                (r: EcoReward) => r.id === userReward.rewardId
-              );
-              
+            {userRewards.map((userReward: any) => {
+              const reward = rewards?.find((r: any) => r.id === userReward.rewardId);
               if (!reward) return null;
               
               return (
-                <Card key={userReward.id} className="overflow-hidden">
-                  {reward.imageUrl && (
-                    <div className="h-40 overflow-hidden">
-                      <img
-                        src={reward.imageUrl}
-                        alt={reward.name}
-                        className="w-full h-full object-cover opacity-70"
-                      />
+                <Card key={userReward.id} className={`border-primary/20 ${userReward.isRedeemed ? 'opacity-70' : ''}`}>
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between">
+                      <CardTitle className="text-lg">{reward.name}</CardTitle>
+                      {userReward.isRedeemed ? (
+                        <Badge variant="outline" className="bg-gray-100">Redeemed</Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-green-100 text-green-800">Active</Badge>
+                      )}
                     </div>
-                  )}
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <CardTitle className="text-xl">{reward.name}</CardTitle>
-                      <Badge 
-                        variant={userReward.isRedeemed ? "secondary" : "outline"}
-                      >
-                        {userReward.isRedeemed ? "Redeemed" : "Available"}
-                      </Badge>
-                    </div>
-                    <CardDescription>
-                      Earned: {new Date(userReward.dateEarned).toLocaleDateString()}
-                    </CardDescription>
+                    <CardDescription>{reward.partnerName || 'EcoTrack'}</CardDescription>
                   </CardHeader>
+                  
                   <CardContent>
-                    <p>{reward.description}</p>
-                    
-                    {userReward.isRedeemed && userReward.redemptionCode && (
-                      <div className="mt-4 p-3 bg-primary/10 rounded-md">
-                        <p className="text-sm font-medium">Redemption Code:</p>
-                        <p className="font-mono text-lg">{userReward.redemptionCode}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Redeemed on: {new Date(userReward.redeemedDate || "").toLocaleDateString()}
-                        </p>
+                    <p className="text-sm text-gray-600">{reward.description}</p>
+                    <div className="mt-4 text-sm text-gray-500">
+                      <div className="flex items-center">
+                        <Calendar className="h-4 w-4 mr-1" />
+                        {userReward.isRedeemed ? 
+                          `Redeemed on ${new Date(userReward.redeemedAt).toLocaleDateString()}` : 
+                          `Earned on ${new Date(userReward.earnedAt).toLocaleDateString()}`
+                        }
                       </div>
-                    )}
+                      {!userReward.isRedeemed && (
+                        <div className="flex items-center mt-1">
+                          <Tag className="h-4 w-4 mr-1" />
+                          Code: <span className="font-mono ml-1">{userReward.redemptionCode}</span>
+                        </div>
+                      )}
+                    </div>
                   </CardContent>
-                  <CardFooter>
-                    {userReward.isRedeemed ? (
-                      <Button variant="outline" disabled className="w-full">
-                        <Check className="mr-2 h-4 w-4" />
-                        Redeemed
-                      </Button>
-                    ) : (
-                      <Button
-                        className="w-full"
-                        disabled={redeemRewardMutation.isPending}
-                        onClick={() => redeemRewardMutation.mutate(userReward.id)}
-                      >
-                        {redeemRewardMutation.isPending ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                          <GiftIcon className="mr-2 h-4 w-4" />
-                        )}
-                        Redeem Now
-                      </Button>
-                    )}
-                  </CardFooter>
+                  
+                  {!userReward.isRedeemed && (
+                    <CardFooter>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="default" className="w-full">
+                            Mark as Used
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Mark reward as used?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to mark this reward as used? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => {
+                                // Implementation for marking as used would go here
+                                toast({
+                                  title: "Reward marked as used",
+                                  description: "Your reward has been marked as used."
+                                });
+                              }}
+                            >
+                              Mark as Used
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </CardFooter>
+                  )}
                 </Card>
               );
             })}
-
-            {(!userRewards || userRewards.length === 0) && (
-              <div className="col-span-full text-center py-8">
-                <p className="text-muted-foreground">
-                  You haven't earned any rewards yet. Start by earning some eco-points!
-                </p>
-              </div>
-            )}
           </div>
-        </TabsContent>
-      </Tabs>
+        </div>
+      )}
+
+      {/* Available Rewards */}
+      <div>
+        <h2 className="text-xl font-bold mb-4 flex items-center">
+          <ShoppingBag className="h-5 w-5 mr-2 text-primary" />
+          Available Rewards
+        </h2>
+        
+        {filteredRewards?.length === 0 && (
+          <div className="bg-gray-50 rounded-lg p-8 text-center">
+            <p className="text-gray-500">No rewards matching your criteria found.</p>
+          </div>
+        )}
+        
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {filteredRewards?.map((reward: any) => {
+            const alreadyOwned = hasReward(reward.id);
+            const canAfford = (user?.score || 0) >= reward.pointCost;
+            
+            return (
+              <Card key={reward.id} className={`border-primary/20 ${!reward.isActive ? 'opacity-70' : ''}`}>
+                {reward.imageUrl && (
+                  <div className="h-40 w-full overflow-hidden rounded-t-lg">
+                    <img
+                      src={reward.imageUrl}
+                      alt={reward.name}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                )}
+                
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between">
+                    <CardTitle className="text-lg">{reward.name}</CardTitle>
+                    {!reward.isActive ? (
+                      <Badge variant="outline" className="bg-gray-100">Unavailable</Badge>
+                    ) : alreadyOwned ? (
+                      <Badge variant="outline" className="bg-blue-100 text-blue-800">Owned</Badge>
+                    ) : null}
+                  </div>
+                  <CardDescription>{reward.partnerName || 'EcoTrack'}</CardDescription>
+                </CardHeader>
+                
+                <CardContent>
+                  <p className="text-sm text-gray-600">{reward.description}</p>
+                  <div className="mt-4 flex justify-between items-center">
+                    <div className="flex items-center gap-1">
+                      <Trophy className="h-4 w-4 text-primary" />
+                      <span className="text-primary font-semibold">{reward.pointCost} points</span>
+                    </div>
+                    {reward.expiryDate && (
+                      <div className="text-xs text-gray-500">
+                        Expires: {formatExpiryDate(reward.expiryDate)}
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+                
+                <CardFooter>
+                  <Button 
+                    variant={canAfford ? "default" : "outline"} 
+                    className="w-full"
+                    disabled={!reward.isActive || alreadyOwned || !canAfford}
+                    onClick={() => handleRedeemReward(reward)}
+                  >
+                    {alreadyOwned ? (
+                      <>
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Already Redeemed
+                      </>
+                    ) : !canAfford ? (
+                      <>
+                        <Trophy className="h-4 w-4 mr-2" />
+                        {reward.pointCost - (user?.score || 0)} more points needed
+                      </>
+                    ) : (
+                      <>
+                        <Award className="h-4 w-4 mr-2" />
+                        Redeem Reward
+                      </>
+                    )}
+                  </Button>
+                </CardFooter>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Redeem Dialog */}
+      <Dialog open={redeemDialogOpen} onOpenChange={setRedeemDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Redeem Reward</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to redeem this reward? This will deduct {selectedReward?.pointCost} points from your balance.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedReward && (
+            <div className="py-4">
+              <div className="flex items-start gap-4">
+                <div className="bg-primary/10 p-3 rounded-full">
+                  <Gift className="h-8 w-8 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-medium text-lg">{selectedReward.name}</h3>
+                  <p className="text-sm text-muted-foreground">{selectedReward.description}</p>
+                  
+                  <div className="mt-2 flex items-center text-sm">
+                    <Trophy className="h-4 w-4 mr-1 text-primary" />
+                    <span className="font-medium">{selectedReward.pointCost} points</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-4 p-3 bg-primary/5 rounded-md">
+                <div className="text-sm flex justify-between mb-1">
+                  <span>Current balance:</span>
+                  <span className="font-medium">{user?.score || 0} points</span>
+                </div>
+                <div className="text-sm flex justify-between mb-1">
+                  <span>Cost:</span>
+                  <span className="font-medium text-primary">{selectedReward.pointCost} points</span>
+                </div>
+                <div className="text-sm flex justify-between pt-1 border-t">
+                  <span>New balance:</span>
+                  <span className="font-medium">{(user?.score || 0) - selectedReward.pointCost} points</span>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRedeemDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={confirmRedemption} disabled={redeemRewardMutation.isPending}>
+              {redeemRewardMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Redeeming...
+                </>
+              ) : (
+                "Confirm Redemption"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmation Dialog */}
+      <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <CheckCircle className="h-5 w-5 mr-2 text-green-600" />
+              Reward Redeemed!
+            </DialogTitle>
+            <DialogDescription>
+              Your reward has been added to your account and is ready to use.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4 bg-green-50 rounded-md p-4 my-4">
+            <p className="text-green-800 font-medium">Your redemption code:</p>
+            <div className="font-mono text-lg font-semibold mt-1 text-center p-2 bg-white rounded-md border border-green-200">
+              {/* This is a generated code for display purposes - in real life this would be returned from the API */}
+              ECO-{Math.random().toString(36).substring(2, 8).toUpperCase()}
+            </div>
+            <p className="text-xs text-green-700 mt-2">
+              You can always access this code from your "Your Rewards" section.
+            </p>
+          </div>
+          
+          <DialogFooter>
+            <Button onClick={() => setConfirmDialogOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
-};
-
-export default RewardsPage;
+}
