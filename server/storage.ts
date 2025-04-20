@@ -2142,6 +2142,7 @@ DatabaseStorage.prototype.createUserFeedback = async function(
     .insert(userFeedback)
     .values({
       ...feedback,
+      status: "new",
       createdAt: new Date(),
       updatedAt: new Date()
     })
@@ -2215,7 +2216,10 @@ DatabaseStorage.prototype.createUserActivityLog = async function(
 ): Promise<UserActivityLog> {
   const [newLog] = await db
     .insert(userActivity)
-    .values(activityLog)
+    .values({
+      ...activityLog,
+      createdAt: new Date()
+    })
     .returning();
   return newLog;
 };

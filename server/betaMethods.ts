@@ -12,7 +12,9 @@ DatabaseStorage.prototype.createUserFeedback = async function(
     .insert(userFeedback)
     .values({
       ...feedback,
-      status: "pending"
+      status: "new",
+      createdAt: new Date(),
+      updatedAt: new Date()
     })
     .returning();
   return newFeedback;
@@ -35,7 +37,7 @@ DatabaseStorage.prototype.updateUserBetaFeedbackStatus = async function(
   const [updatedUser] = await db
     .update(users)
     .set({
-      hasProvidedBetaFeedback: provided
+      betaFeedbackProvided: provided
     })
     .where(eq(users.id, userId))
     .returning();
@@ -62,7 +64,13 @@ DatabaseStorage.prototype.createErrorLog = async function(
 ): Promise<ErrorLog> {
   const [newErrorLog] = await db
     .insert(errorLogs)
-    .values(errorLog)
+    .values({
+      ...errorLog,
+      severity: errorLog.severity || "medium",
+      resolved: false,
+      resolution: null,
+      createdAt: new Date()
+    })
     .returning();
   return newErrorLog;
 };
@@ -80,7 +88,10 @@ DatabaseStorage.prototype.createUserActivityLog = async function(
 ): Promise<UserActivityLog> {
   const [newLog] = await db
     .insert(userActivity)
-    .values(activityLog)
+    .values({
+      ...activityLog,
+      createdAt: new Date()
+    })
     .returning();
   return newLog;
 };
