@@ -25,7 +25,7 @@ export default function FeedbackPage() {
       </div>
       
       <div className="mt-8">
-        <FeedbackForm onClose={() => navigate("/dashboard")} />
+        <FeedbackForm onClose={() => setLocation("/dashboard")} />
       </div>
     </div>
   );
