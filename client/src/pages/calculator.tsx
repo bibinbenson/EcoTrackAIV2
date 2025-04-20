@@ -1,5 +1,6 @@
 import CarbonCalculator from "@/components/calculator/CarbonCalculator";
 import ActivityLogForm from "@/components/calculator/ActivityLogForm";
+import SimpleActivityForm from "@/components/calculator/SimpleActivityForm";
 import SustainabilityTip from "@/components/education/SustainabilityTip";
 
 export default function Calculator() {
@@ -14,7 +15,12 @@ export default function Calculator() {
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <CarbonCalculator />
+          {/* Quick Logger for easier testing */}
+          <SimpleActivityForm />
+          
+          <div className="mt-6">
+            <CarbonCalculator />
+          </div>
           
           <div className="mt-6">
             <ActivityLogForm />
