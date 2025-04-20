@@ -17,7 +17,14 @@ import {
   userRewards, UserReward, InsertUserReward,
   userFeedback, UserFeedback, InsertUserFeedback,
   errorLogs, ErrorLog, InsertErrorLog,
-  userActivity, UserActivityLog, InsertUserActivityLog
+  userActivity, UserActivityLog, InsertUserActivityLog,
+  // ESG Trading Platform imports
+  esgCompanies, EsgCompany, InsertEsgCompany,
+  esgSecurities, EsgSecurity, InsertEsgSecurity,
+  esgPortfolios, EsgPortfolio, InsertEsgPortfolio,
+  esgPortfolioHoldings, EsgPortfolioHolding, InsertEsgPortfolioHolding,
+  esgMarketData, EsgMarketData, InsertEsgMarketData,
+  esgTransactions, EsgTransaction, InsertEsgTransaction
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, between, count, sum } from "drizzle-orm";
