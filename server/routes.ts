@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { AchievementProcessor } from "./achievementProcessor";
+import { carbonApiService } from "./services/carbonApiService";
 import {
   insertUserSchema,
   insertActivitySchema,
