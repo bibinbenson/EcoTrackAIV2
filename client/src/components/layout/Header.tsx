@@ -59,7 +59,10 @@ export default function Header({ currentPath }: HeaderProps) {
             <div className="text-neutral-800 hover:text-primary font-medium cursor-pointer">
               Supply Chain
             </div>
-            <div className="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 hidden group-hover:block">
+            <div className="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300" 
+                 style={{ transform: 'translateY(10px)', pointerEvents: 'none' }}
+                 onMouseOver={(e) => e.currentTarget.style.pointerEvents = 'auto'}
+                 onMouseLeave={(e) => e.currentTarget.style.pointerEvents = 'none'}>
               {supplyChainItems.map((item) => (
                 <Link key={item.href} href={item.href}>
                   <div className={`block px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-100 cursor-pointer ${
