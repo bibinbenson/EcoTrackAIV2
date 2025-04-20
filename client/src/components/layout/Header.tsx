@@ -100,32 +100,39 @@ export default function Header({ currentPath }: HeaderProps) {
             
             {/* Supply Chain Navigation - Desktop */}
             <div className="relative">
-              <div 
-                className={`px-3 py-1.5 rounded-md flex items-center text-sm font-medium cursor-pointer transition-colors ${
-                  isSupplyChainActive || supplyChainOpen 
-                    ? "text-primary bg-primary/5" 
-                    : "text-neutral-600 hover:text-primary hover:bg-neutral-50"
-                }`}
-                onClick={() => setSupplyChainOpen(!supplyChainOpen)}
-              >
-                <Truck className="h-4 w-4 mr-1" />
-                <span>Supply Chain</span>
-                <ChevronDown className={`ml-1 h-3.5 w-3.5 transition-transform ${supplyChainOpen ? 'transform rotate-180' : ''}`} />
-              </div>
+              {supplyChainItems.map((item, index) => (
+                index === 0 && (
+                  <Link key={`direct-${item.href}`} href={item.href}>
+                    <div 
+                      className={`px-3 py-1.5 rounded-md flex items-center text-sm font-medium cursor-pointer transition-colors ${
+                        isSupplyChainActive
+                          ? "text-primary bg-primary/5" 
+                          : "text-neutral-600 hover:text-primary hover:bg-neutral-50"
+                      }`}
+                    >
+                      <Truck className="h-4 w-4 mr-1" />
+                      <span>Supply Chain</span>
+                      <ChevronDown className="ml-1 h-3.5 w-3.5" />
+                    </div>
+                  </Link>
+                )
+              ))}
               
-              {supplyChainOpen && (
-                <div className="absolute left-0 mt-1 w-44 bg-white rounded-md shadow-lg py-1 z-10 border border-neutral-100">
-                  {supplyChainItems.map((item) => (
-                    <Link key={item.href} href={item.href}>
-                      <div className={`block px-4 py-1.5 text-sm text-neutral-700 hover:bg-neutral-50 cursor-pointer ${
-                        currentPath === item.href ? "bg-primary/5 text-primary font-medium" : ""
-                      }`}>
-                        {item.label}
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              )}
+              {/* Supply Chain Dropdown - Desktop */}
+              <div 
+                className="absolute left-0 mt-1 w-44 bg-white rounded-md shadow-lg py-1 z-10 border border-neutral-100"
+                style={{ display: "none" }} // Hidden but kept for future improvements
+              >
+                {supplyChainItems.map((item) => (
+                  <Link key={item.href} href={item.href}>
+                    <div className={`block px-4 py-1.5 text-sm text-neutral-700 hover:bg-neutral-50 cursor-pointer ${
+                      currentPath === item.href ? "bg-primary/5 text-primary font-medium" : ""
+                    }`}>
+                      {item.label}
+                    </div>
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
         </nav>
@@ -176,34 +183,21 @@ export default function Header({ currentPath }: HeaderProps) {
                 ))}
                 
                 {/* Supply Chain Items - Mobile */}
-                <div 
-                  className={`mt-2 px-3 py-2 rounded-md flex items-center justify-between font-medium cursor-pointer ${
-                    isSupplyChainActive ? "bg-primary/10 text-primary" : "text-neutral-800 hover:bg-neutral-50"
-                  }`}
-                  onClick={() => setSupplyChainOpen(!supplyChainOpen)}
-                >
-                  <div className="flex items-center">
-                    <Truck className="h-4 w-4 mr-2" />
-                    <span>Supply Chain</span>
-                  </div>
-                  <ChevronDown className={`h-4 w-4 transition-transform ${supplyChainOpen ? 'transform rotate-180' : ''}`} />
-                </div>
-                
-                {supplyChainOpen && (
-                  <div className="ml-7 border-l border-neutral-200 pl-2">
-                    {supplyChainItems.map((item) => (
-                      <Link key={item.href} href={item.href}>
-                        <div className={`px-3 py-2 rounded-md text-sm font-medium cursor-pointer ${
-                          currentPath === item.href
-                            ? "bg-primary/10 text-primary"
-                            : "text-neutral-700 hover:bg-neutral-50"
-                        }`}>
-                          {item.label}
+                {supplyChainItems.map((item, index) => (
+                  index === 0 && (
+                    <Link key={`mobile-${item.href}`} href={item.href}>
+                      <div className={`mt-2 px-3 py-2 rounded-md flex items-center justify-between font-medium cursor-pointer ${
+                        isSupplyChainActive ? "bg-primary/10 text-primary" : "text-neutral-800 hover:bg-neutral-50"
+                      }`}>
+                        <div className="flex items-center">
+                          <Truck className="h-4 w-4 mr-2" />
+                          <span>Supply Chain</span>
                         </div>
-                      </Link>
-                    ))}
-                  </div>
-                )}
+                        <ChevronDown className="h-4 w-4" />
+                      </div>
+                    </Link>
+                  )
+                ))}
                 
                 <div className="mt-4 px-3">
                   <Link href="/calculator">
