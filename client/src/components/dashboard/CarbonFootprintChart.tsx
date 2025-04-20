@@ -83,7 +83,7 @@ export default function CarbonFootprintChart() {
                 className={cn(
                   "text-sm rounded",
                   period === timePeriod.value 
-                    ? "bg-primary bg-opacity-10 text-primary" 
+                    ? "bg-primary/10 text-primary font-medium" 
                     : "text-neutral-600 hover:text-primary"
                 )}
                 onClick={() => setPeriod(timePeriod.value)}
