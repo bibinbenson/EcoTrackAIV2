@@ -18,6 +18,7 @@ import Goals from "@/pages/goals";
 import Rewards from "@/pages/rewards";
 import Achievements from "@/pages/achievements";
 import Analytics from "@/pages/analytics";
+import ESGTrading from "@/pages/esg-trading";
 
 // Supply Chain pages
 import Suppliers from "@/pages/suppliers";
@@ -39,6 +40,7 @@ function Router() {
       <Route path="/rewards" component={Rewards} />
       <Route path="/achievements" component={Achievements} />
       <Route path="/analytics" component={Analytics} />
+      <Route path="/esg-trading" component={ESGTrading} />
       
       {/* Supply Chain Routes */}
       <Route path="/suppliers" component={Suppliers} />

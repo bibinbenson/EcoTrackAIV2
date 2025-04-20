@@ -15,6 +15,7 @@ const navItems = [
   { href: "/learn", label: "Learn" },
   { href: "/marketplace", label: "Marketplace" },
   { href: "/community", label: "Community" },
+  { href: "/esg-trading", label: "ESG Trading" },
 ];
 
 // Supply chain navigation items
