@@ -16,7 +16,6 @@ import {
   TrendingUp,
   Truck,
   BarChart2,
-  Home,
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
@@ -47,33 +46,10 @@ interface HeaderProps {
 }
 
 export default function Header({ currentPath }: HeaderProps) {
-  const [supplyChainOpen, setSupplyChainOpen] = useState(false);
   const [mobileSupplyChainOpen, setMobileSupplyChainOpen] = useState(false);
   const [navScrollPosition, setNavScrollPosition] = useState(0);
   const navScrollRef = useRef<HTMLDivElement>(null);
   const isSupplyChainActive = supplyChainItems.some(item => currentPath === item.href);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const supplyChainContainerRef = useRef<HTMLDivElement>(null);
-
-  // Handle both hover and click for Supply Chain dropdown
-  const handleSupplyChainMouseEnter = () => setSupplyChainOpen(true);
-  const handleSupplyChainMouseLeave = () => setSupplyChainOpen(false);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        supplyChainContainerRef.current && 
-        !supplyChainContainerRef.current.contains(event.target as Node)
-      ) {
-        setSupplyChainOpen(false);
-      }
-    }
-    
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   // Calculate if we can scroll left or right
   const canScrollLeft = navScrollPosition > 0;
@@ -163,51 +139,37 @@ export default function Header({ currentPath }: HeaderProps) {
               </Link>
             ))}
             
-            {/* Supply Chain Navigation - Desktop */}
-            <div className="relative inline-block text-left"
-              onMouseEnter={handleSupplyChainMouseEnter}
-              onMouseLeave={handleSupplyChainMouseLeave}
-              ref={supplyChainContainerRef}
-            >
-              <button
-                ref={buttonRef}
-                className={`px-3 py-1.5 rounded-md flex items-center text-sm font-medium cursor-pointer transition-colors whitespace-nowrap border-0 bg-transparent ${
-                  isSupplyChainActive || supplyChainOpen
-                    ? "text-primary bg-primary/5" 
-                    : "text-neutral-600 hover:text-primary hover:bg-neutral-50"
-                }`}
-                onClick={() => setSupplyChainOpen(prev => !prev)}
-                aria-haspopup="true"
-                aria-expanded={supplyChainOpen}
-              >
+            {/* Supply Chain Links - Direct links instead of dropdown */}
+            <Link href="/suppliers">
+              <div className={`px-3 py-1.5 rounded-md flex items-center text-sm font-medium cursor-pointer transition-colors whitespace-nowrap ${
+                currentPath === "/suppliers" 
+                  ? "text-primary bg-primary/5" 
+                  : "text-neutral-600 hover:text-primary hover:bg-neutral-50"
+              }`}>
                 <Truck className="h-4 w-4 mr-1.5" />
-                <span>Supply Chain</span>
-                <ChevronDown className={`ml-1 h-3.5 w-3.5 transition-transform ${supplyChainOpen ? 'transform rotate-180' : ''}`} />
-              </button>
-              
-              {/* Supply Chain Dropdown - Desktop */}
-              <div 
-                ref={dropdownRef}
-                className={`absolute left-0 top-full mt-1 w-48 bg-white rounded-md shadow-lg py-1 z-20 border border-neutral-100 ${
-                  supplyChainOpen ? "block" : "hidden"
-                }`}
-                role="menu"
-              >
-                {supplyChainItems.map((item) => (
-                  <Link key={item.href} href={item.href}>
-                    <div 
-                      className={`block px-4 py-2 text-sm flex items-center text-neutral-700 hover:bg-neutral-50 hover:text-primary transition-colors cursor-pointer ${
-                        currentPath === item.href ? "bg-primary/5 text-primary font-medium" : ""
-                      }`}
-                      role="menuitem"
-                    >
-                      <span className="mr-2">{item.icon}</span>
-                      {item.label}
-                    </div>
-                  </Link>
-                ))}
+                <span>Suppliers</span>
               </div>
-            </div>
+            </Link>
+            <Link href="/supplier-emissions">
+              <div className={`px-3 py-1.5 rounded-md flex items-center text-sm font-medium cursor-pointer transition-colors whitespace-nowrap ${
+                currentPath === "/supplier-emissions" 
+                  ? "text-primary bg-primary/5" 
+                  : "text-neutral-600 hover:text-primary hover:bg-neutral-50"
+              }`}>
+                <Truck className="h-4 w-4 mr-1.5" />
+                <span>Emissions</span>
+              </div>
+            </Link>
+            <Link href="/supply-chain-risks">
+              <div className={`px-3 py-1.5 rounded-md flex items-center text-sm font-medium cursor-pointer transition-colors whitespace-nowrap ${
+                currentPath === "/supply-chain-risks" 
+                  ? "text-primary bg-primary/5" 
+                  : "text-neutral-600 hover:text-primary hover:bg-neutral-50"
+              }`}>
+                <Truck className="h-4 w-4 mr-1.5" />
+                <span>Risks</span>
+              </div>
+            </Link>
           </div>
           
           {/* Right scroll button - only show if can scroll right */}
