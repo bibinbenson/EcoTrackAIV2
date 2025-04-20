@@ -204,6 +204,9 @@ export class MemStorage implements IStorage {
   private goalCurrentId: number;
   private rewardCurrentId: number;
   private userRewardCurrentId: number;
+  private userFeedbackCurrentId: number;
+  private errorLogCurrentId: number;
+  private userActivityLogCurrentId: number;
 
   constructor() {
     this.users = new Map();
@@ -242,6 +245,9 @@ export class MemStorage implements IStorage {
     this.goalCurrentId = 1;
     this.rewardCurrentId = 1;
     this.userRewardCurrentId = 1;
+    this.userFeedbackCurrentId = 1;
+    this.errorLogCurrentId = 1;
+    this.userActivityLogCurrentId = 1;
 
     // Initialize with default data
     this.initializeDefaultData();
@@ -514,7 +520,19 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.userCurrentId++;
-    const user: User = { ...insertUser, id, score: 0 };
+    const user: User = { 
+      ...insertUser, 
+      id, 
+      score: 0, 
+      accountType: insertUser.accountType || 'individual', 
+      avatarUrl: insertUser.avatarUrl || null, 
+      createdAt: new Date(),
+      lastLogin: null,
+      onboardingCompleted: false,
+      betaFeedbackProvided: false,
+      isEmailVerified: false,
+      preferences: {}
+    };
     this.users.set(id, user);
     return user;
   }
@@ -1267,6 +1285,84 @@ export class MemStorage implements IStorage {
     this.userRewards.set(userRewardId, updatedUserReward);
     return updatedUserReward;
   }
+  
+  // Beta user operations
+  async createUserFeedback(feedback: InsertUserFeedback): Promise<UserFeedback> {
+    const id = this.userFeedbackCurrentId++;
+    const newFeedback: UserFeedback = {
+      ...feedback,
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.userFeedback.set(id, newFeedback);
+    return newFeedback;
+  }
+  
+  async getUserFeedback(userId: number): Promise<UserFeedback[]> {
+    return Array.from(this.userFeedback.values())
+      .filter(feedback => feedback.userId === userId);
+  }
+  
+  async updateUserBetaFeedbackStatus(userId: number, provided: boolean): Promise<User | undefined> {
+    const user = await this.getUser(userId);
+    if (!user) return undefined;
+    
+    const updatedUser = { 
+      ...user, 
+      betaFeedbackProvided: provided 
+    };
+    this.users.set(userId, updatedUser);
+    return updatedUser;
+  }
+  
+  async updateUserOnboardingStatus(userId: number, completed: boolean): Promise<User | undefined> {
+    const user = await this.getUser(userId);
+    if (!user) return undefined;
+    
+    const updatedUser = { 
+      ...user,
+      onboardingCompleted: completed,
+      lastLogin: new Date()
+    };
+    this.users.set(userId, updatedUser);
+    return updatedUser;
+  }
+  
+  // Error tracking operations
+  async createErrorLog(errorLog: InsertErrorLog): Promise<ErrorLog> {
+    const id = this.errorLogCurrentId++;
+    const newErrorLog: ErrorLog = {
+      ...errorLog,
+      id,
+      timestamp: new Date()
+    };
+    this.errorLogs.set(id, newErrorLog);
+    return newErrorLog;
+  }
+  
+  async getErrorLogs(): Promise<ErrorLog[]> {
+    return Array.from(this.errorLogs.values())
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  }
+  
+  // User analytics operations
+  async createUserActivityLog(activityLog: InsertUserActivityLog): Promise<UserActivityLog> {
+    const id = this.userActivityLogCurrentId++;
+    const newLog: UserActivityLog = {
+      ...activityLog,
+      id,
+      timestamp: new Date()
+    };
+    this.userActivityLogs.set(id, newLog);
+    return newLog;
+  }
+  
+  async getUserActivityLogs(userId: number): Promise<UserActivityLog[]> {
+    return Array.from(this.userActivityLogs.values())
+      .filter(log => log.userId === userId)
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1956,6 +2052,20 @@ interface DatabaseStorage {
   getUserCarbonReduction(userId: number): Promise<number>;
   getUserMonthlyReductionPercentage(userId: number): Promise<number>;
   updateUserAchievement(id: number, data: Partial<UserAchievement>): Promise<UserAchievement | undefined>;
+  
+  // Beta user operations
+  createUserFeedback(feedback: InsertUserFeedback): Promise<UserFeedback>;
+  getUserFeedback(userId: number): Promise<UserFeedback[]>;
+  updateUserBetaFeedbackStatus(userId: number, provided: boolean): Promise<User | undefined>;
+  updateUserOnboardingStatus(userId: number, completed: boolean): Promise<User | undefined>;
+  
+  // Error tracking operations
+  createErrorLog(errorLog: InsertErrorLog): Promise<ErrorLog>;
+  getErrorLogs(): Promise<ErrorLog[]>;
+  
+  // User analytics operations
+  createUserActivityLog(activityLog: InsertUserActivityLog): Promise<UserActivityLog>;
+  getUserActivityLogs(userId: number): Promise<UserActivityLog[]>;
 }
 
 // Import the database achievement tracking methods
