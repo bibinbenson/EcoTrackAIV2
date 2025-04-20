@@ -71,7 +71,8 @@ export class CarbonApiService {
         response_format: { type: "json_object" }
       });
 
-      return JSON.parse(response.choices[0].message.content) as EmissionFactorResponse;
+      const content = response.choices[0].message.content || '{}';
+      return JSON.parse(content) as EmissionFactorResponse;
     } catch (error) {
       console.error("Error getting emission factor from OpenAI:", error);
       
@@ -112,7 +113,7 @@ export class CarbonApiService {
               `Provide a detailed carbon breakdown for the following activity:\n` +
               `Activity description: ${activity.description}\n` +
               `Category: ${category.name}\n` +
-              `Carbon impact: ${activity.carbonImpact}\n` +
+              `Carbon impact: ${activity.carbonAmount}\n` +
               `Date: ${activity.date}\n\n` +
               `Return a JSON object with the following structure:\n` +
               `{\n` +
@@ -129,10 +130,11 @@ export class CarbonApiService {
         response_format: { type: "json_object" }
       });
 
-      const result = JSON.parse(response.choices[0].message.content) as CarbonActivityDetails;
+      const content = response.choices[0].message.content || '{}';
+      const result = JSON.parse(content) as CarbonActivityDetails;
       
       // Ensure the total matches the provided carbon impact for consistency
-      result.totalEmissions = activity.carbonImpact;
+      result.totalEmissions = activity.carbonAmount;
       
       return result;
     } catch (error) {
@@ -140,10 +142,10 @@ export class CarbonApiService {
       
       // Return a fallback with estimated scope breakdowns
       return {
-        scope1: Math.round(activity.carbonImpact * 0.3 * 100) / 100,
-        scope2: Math.round(activity.carbonImpact * 0.2 * 100) / 100,
-        scope3: Math.round(activity.carbonImpact * 0.5 * 100) / 100,
-        totalEmissions: activity.carbonImpact,
+        scope1: Math.round(activity.carbonAmount * 0.3 * 100) / 100,
+        scope2: Math.round(activity.carbonAmount * 0.2 * 100) / 100,
+        scope3: Math.round(activity.carbonAmount * 0.5 * 100) / 100,
+        totalEmissions: activity.carbonAmount,
         unit: "kgCO2e",
         activitySpecificFactors: {},
         suggestions: [
@@ -194,7 +196,8 @@ export class CarbonApiService {
         response_format: { type: "json_object" }
       });
 
-      return JSON.parse(response.choices[0].message.content);
+      const content = response.choices[0].message.content || '{}';
+      return JSON.parse(content);
     } catch (error) {
       console.error("Error analyzing carbon activity:", error);
       

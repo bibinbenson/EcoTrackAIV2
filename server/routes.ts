@@ -831,6 +831,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
+  // External Carbon API routes
+  app.post("/api/carbon/analyze-activity", async (req: Request, res: Response) => {
+    try {
+      const { description } = req.body;
+      
+      if (!description || typeof description !== 'string') {
+        return res.status(400).json({ message: "Activity description is required" });
+      }
+      
+      const result = await carbonApiService.analyzeCarbonActivity(description);
+      return res.json(result);
+    } catch (error) {
+      console.error("Error analyzing carbon activity:", error);
+      return res.status(500).json({ message: "Error analyzing carbon activity", error });
+    }
+  });
+  
+  app.post("/api/carbon/emission-factor", async (req: Request, res: Response) => {
+    try {
+      const { activity, category, quantity, unit } = req.body;
+      
+      if (!activity || !category || !quantity || !unit) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      
+      const result = await carbonApiService.getEmissionFactor(
+        activity,
+        category,
+        Number(quantity),
+        unit
+      );
+      
+      return res.json(result);
+    } catch (error) {
+      console.error("Error getting emission factor:", error);
+      return res.status(500).json({ message: "Error getting emission factor", error });
+    }
+  });
+  
+  app.get("/api/carbon/activity-breakdown/:activityId", async (req: Request, res: Response) => {
+    try {
+      const activityId = parseInt(req.params.activityId);
+      
+      // Get the activity
+      const activity = await storage.getActivity(activityId);
+      if (!activity) {
+        return res.status(404).json({ message: "Activity not found" });
+      }
+      
+      // Get the category
+      const category = await storage.getCategory(activity.categoryId);
+      if (!category) {
+        return res.status(404).json({ message: "Category not found" });
+      }
+      
+      const breakdown = await carbonApiService.getDetailedCarbonBreakdown(activity, category);
+      return res.json(breakdown);
+    } catch (error) {
+      console.error("Error getting carbon breakdown:", error);
+      return res.status(500).json({ message: "Error getting carbon breakdown", error });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

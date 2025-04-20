@@ -458,6 +458,10 @@ export type CarbonReductionGoal = typeof carbonReductionGoals.$inferSelect;
 export type InsertCarbonReductionGoal = z.infer<typeof insertCarbonReductionGoalSchema>;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 
+// Alias for more semantic type naming in the carbon API service
+export type CarbonActivity = typeof activities.$inferSelect;
+export type CarbonCategory = typeof categories.$inferSelect;
+
 export type Category = typeof categories.$inferSelect;
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
 
