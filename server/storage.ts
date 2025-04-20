@@ -18,15 +18,9 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, between, count, sum } from "drizzle-orm";
-import session from "express-session";
-import connectPg from "connect-pg-simple";
-import createMemoryStore from "memorystore";
-import { pool } from "./db";
 
 // Interface for storage operations
 export interface IStorage {
-  // Session store for authentication
-  sessionStore: session.SessionStore;
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
