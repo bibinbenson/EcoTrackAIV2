@@ -2192,7 +2192,12 @@ DatabaseStorage.prototype.createErrorLog = async function(
 ): Promise<ErrorLog> {
   const [newErrorLog] = await db
     .insert(errorLogs)
-    .values(errorLog)
+    .values({
+      ...errorLog,
+      severity: errorLog.severity || "medium",
+      resolved: false,
+      resolution: null
+    })
     .returning();
   return newErrorLog;
 };
