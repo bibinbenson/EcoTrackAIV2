@@ -238,6 +238,7 @@ export default function CarbonCalculator() {
         metadata: { ...data }
       };
       
+      console.log("Submitting activity:", payload);
       return apiRequest("POST", "/api/activities", payload);
     },
     onSuccess: () => {
@@ -709,7 +710,7 @@ export default function CarbonCalculator() {
             
             <Button 
               type="submit"
-              className="w-full"
+              className="w-full mt-6 text-white bg-primary hover:bg-primary/90 font-semibold py-3"
               disabled={submitActivity.isPending}
             >
               {submitActivity.isPending ? "Logging Activity..." : "Log This Activity"}
