@@ -1314,6 +1314,7 @@ export class MemStorage implements IStorage {
     const newFeedback: UserFeedback = {
       ...feedback,
       id,
+      status: "new",
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -1376,7 +1377,7 @@ export class MemStorage implements IStorage {
     const newLog: UserActivityLog = {
       ...activityLog,
       id,
-      timestamp: new Date()
+      createdAt: new Date()
     };
     this.userActivityLogs.set(id, newLog);
     return newLog;
@@ -1385,7 +1386,7 @@ export class MemStorage implements IStorage {
   async getUserActivityLogs(userId: number): Promise<UserActivityLog[]> {
     return Array.from(this.userActivityLogs.values())
       .filter(log => log.userId === userId)
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 }
 
