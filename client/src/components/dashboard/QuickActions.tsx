@@ -8,28 +8,28 @@ const quickActions = [
     icon: <Calculator className="h-6 w-6" />,
     label: "Calculate Footprint",
     href: "/calculator",
-    bgClass: "bg-primary bg-opacity-10",
+    bgClass: "bg-primary/10",
     textClass: "text-primary"
   },
   {
     icon: <Plus className="h-6 w-6" />,
     label: "Log Activity",
     href: "/calculator",
-    bgClass: "bg-blue-500 bg-opacity-10",
+    bgClass: "bg-blue-500/10",
     textClass: "text-blue-500"
   },
   {
     icon: <Leaf className="h-6 w-6" />,
     label: "Browse Offsets",
     href: "/marketplace",
-    bgClass: "bg-amber-500 bg-opacity-10",
+    bgClass: "bg-amber-500/10",
     textClass: "text-amber-500"
   },
   {
     icon: <Share2 className="h-6 w-6" />,
     label: "Share Progress",
     href: "/profile",
-    bgClass: "bg-indigo-500 bg-opacity-10",
+    bgClass: "bg-indigo-500/10",
     textClass: "text-indigo-500"
   }
 ];
@@ -46,7 +46,7 @@ export default function QuickActions() {
       <CardContent>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {quickActions.map((action, index) => (
-            <Link key={index} href={action.href} className="flex flex-col items-center justify-center p-4 rounded-lg border border-neutral-200 hover:border-primary hover:bg-primary hover:bg-opacity-5 transition-colors">
+            <Link key={index} href={action.href} className="flex flex-col items-center justify-center p-4 rounded-lg border border-neutral-200 hover:border-primary hover:bg-primary/5 transition-colors">
                 <div className={`h-12 w-12 rounded-full ${action.bgClass} flex items-center justify-center ${action.textClass} mb-2`}>
                   {action.icon}
                 </div>

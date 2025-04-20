@@ -199,7 +199,7 @@ function ProjectDetails({ projectId }: { projectId: number }) {
           <MapPin className="h-4 w-4 mr-1" />
           <span>{project.location}</span>
           {project.isVerified && (
-            <Badge className="ml-2 bg-primary bg-opacity-10 text-primary">Verified</Badge>
+            <Badge className="ml-2 bg-primary/10 text-primary">Verified</Badge>
           )}
         </div>
       </div>
