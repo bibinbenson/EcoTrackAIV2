@@ -18,10 +18,31 @@ import {
 } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Calculator, Filter, BarChart, RefreshCw } from 'lucide-react';
+import { Calculator, Filter, BarChart, RefreshCw, Leaf } from 'lucide-react';
+
+// Define types first
+interface ESGAction {
+  id: number;
+  title: string;
+  description: string;
+  impact: "low" | "medium" | "high";
+  category: string;
+  roi?: string;
+  carbonReduction: number;
+  difficulty: "easy" | "moderate" | "challenging";
+  details: {
+    steps: string[];
+    benefits: string[];
+    metrics: {
+      averageCost: string;
+      paybackPeriod: string;
+      lifespan: string;
+    }
+  }
+}
 
 // Mock data for ESG actions (in a real app, this would come from the API)
-const esgActions = [
+const esgActions: ESGAction[] = [
   {
     id: 1,
     title: "Solar Panel Installation",
@@ -272,26 +293,7 @@ const esgActions = [
   }
 ];
 
-// Define types
-interface ESGAction {
-  id: number;
-  title: string;
-  description: string;
-  impact: "low" | "medium" | "high";
-  category: string;
-  roi?: string;
-  carbonReduction: number;
-  difficulty: "easy" | "moderate" | "challenging";
-  details: {
-    steps: string[];
-    benefits: string[];
-    metrics: {
-      averageCost: string;
-      paybackPeriod: string;
-      lifespan: string;
-    }
-  }
-}
+
 
 export default function ActionRecommendationEngine() {
   const [filter, setFilter] = useState('all');
@@ -385,13 +387,17 @@ export default function ActionRecommendationEngine() {
             key={action.id}
             title={action.title}
             description={action.description}
-            impact={action.impact}
+            impact={action.impact as "low" | "medium" | "high"}
             category={action.category}
             roi={action.roi}
             carbonReduction={action.carbonReduction}
-            difficulty={action.difficulty}
+            difficulty={action.difficulty as "easy" | "moderate" | "challenging"}
             onClick={() => {
-              setSelectedAction(action);
+              setSelectedAction({
+                ...action,
+                impact: action.impact as "low" | "medium" | "high",
+                difficulty: action.difficulty as "easy" | "moderate" | "challenging"
+              });
               setIsDialogOpen(true);
             }}
           />
