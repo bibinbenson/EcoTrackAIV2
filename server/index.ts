@@ -39,6 +39,7 @@ app.use((req, res, next) => {
 
 (async () => {
   // Initialize default data in the database - achieve and rewards seeding 
+  const { seedData } = await import('./seeders/index');
   await seedData();
   
   const server = await registerRoutes(app);
