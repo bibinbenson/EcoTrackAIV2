@@ -1,6 +1,6 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
@@ -148,8 +148,7 @@ export function setupAuth(app: Express) {
         if (err) return next(err);
         
         // Remove password from response
-        const userResponse = { ...user };
-        delete userResponse.password;
+        const { password, ...userResponse } = user;
         
         res.status(201).json(userResponse);
       });
@@ -170,8 +169,7 @@ export function setupAuth(app: Express) {
         storage.updateUserLastLogin(user.id, new Date());
         
         // Remove password from response
-        const userResponse = { ...user };
-        delete userResponse.password;
+        const { password, ...userResponse } = user;
         
         res.status(200).json(userResponse);
       });
@@ -189,14 +187,13 @@ export function setupAuth(app: Express) {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Not authenticated" });
     
     // Remove password from response
-    const userResponse = { ...req.user };
-    delete userResponse.password;
+    const { password, ...userResponse } = req.user;
     
     res.json(userResponse);
   });
 
   // Middleware to check if user is authenticated
-  const isAuthenticated = (req, res, next) => {
+  const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
     if (req.isAuthenticated()) {
       return next();
     }
