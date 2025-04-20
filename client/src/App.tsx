@@ -16,6 +16,7 @@ import Profile from "@/pages/profile";
 import NotFound from "@/pages/not-found";
 import Goals from "@/pages/goals";
 import Rewards from "@/pages/rewards";
+import Achievements from "@/pages/achievements";
 import Analytics from "@/pages/analytics";
 
 // Supply Chain pages
@@ -36,6 +37,7 @@ function Router() {
       <Route path="/profile" component={Profile} />
       <Route path="/goals" component={Goals} />
       <Route path="/rewards" component={Rewards} />
+      <Route path="/achievements" component={Achievements} />
       <Route path="/analytics" component={Analytics} />
       
       {/* Supply Chain Routes */}

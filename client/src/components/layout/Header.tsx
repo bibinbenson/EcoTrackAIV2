@@ -10,9 +10,10 @@ const navItems = [
   { href: "/analytics", label: "Analytics" },
   { href: "/calculator", label: "Calculator" },
   { href: "/goals", label: "Goals" },
+  { href: "/achievements", label: "Achievements" },
+  { href: "/rewards", label: "Rewards" },
   { href: "/learn", label: "Learn" },
   { href: "/marketplace", label: "Marketplace" },
-  { href: "/rewards", label: "Rewards" },
   { href: "/community", label: "Community" },
 ];
 
