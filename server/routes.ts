@@ -1028,6 +1028,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  
+  // ESG Trading Platform Waitlist API
+  app.post("/api/esg/waitlist", async (req: Request, res: Response) => {
+    try {
+      // In a full implementation, we would save this information to the database
+      // For now, we'll just mock a successful response
+      console.log("User joined ESG trading waitlist:", req.body);
+      
+      // Track user activity
+      if (req.isAuthenticated()) {
+        await storage.createUserActivityLog({
+          userId: req.user.id,
+          activityType: "ESG_TRADING_WAITLIST",
+          details: { timestamp: new Date().toISOString() },
+          sessionId: req.body.sessionId || req.sessionID
+        });
+      }
+      
+      return res.status(200).json({
+        status: "success",
+        message: "Successfully joined the waitlist"
+      });
+    } catch (error: any) {
+      console.error("Error joining ESG trading waitlist:", error);
+      return res.status(500).json({
+        status: "error",
+        message: "Failed to join waitlist: " + error.message
+      });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

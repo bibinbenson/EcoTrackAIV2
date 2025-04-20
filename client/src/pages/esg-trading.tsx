@@ -22,8 +22,12 @@ import {
   AreaChart,
   Area
 } from 'recharts';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { EsgCompany, EsgSecurity, EsgPortfolio, EsgTransaction } from "@shared/schema";
 
-// Mock data for carbon market trends
+// For fallback when API data isn't available yet
 const marketTrendData = [
   { month: 'Jan', price: 30, volume: 2400 },
   { month: 'Feb', price: 28, volume: 2200 },
@@ -39,7 +43,7 @@ const marketTrendData = [
   { month: 'Dec', price: 54, volume: 5200 },
 ];
 
-// Mock data for company performance
+// Fallback performance data
 const companyPerformanceData = [
   { month: 'Jan', carbon: 100, industry: 120, reduction: 0 },
   { month: 'Feb', carbon: 95, industry: 118, reduction: 5 },
@@ -57,6 +61,7 @@ const companyPerformanceData = [
 
 export default function ESGTradingPage() {
   const [activeTab, setActiveTab] = useState('recommendations');
+  const { toast } = useToast();
   
   // Fetch user carbon data
   const { data: carbonData } = useQuery({
@@ -70,11 +75,79 @@ export default function ESGTradingPage() {
     },
   });
   
+  // Fetch ESG Companies
+  const { data: esgCompanies, isLoading: isLoadingCompanies } = useQuery({
+    queryKey: ['/api/esg/companies'],
+    queryFn: async () => {
+      try {
+        const response = await fetch('/api/esg/companies');
+        if (!response.ok) {
+          return []; // Return empty array for now until API is fully implemented
+        }
+        return response.json();
+      } catch (error) {
+        console.error("Error fetching ESG companies:", error);
+        return []; // Return empty array for now
+      }
+    },
+  });
+  
+  // Fetch ESG Securities
+  const { data: esgSecurities, isLoading: isLoadingSecurities } = useQuery({
+    queryKey: ['/api/esg/securities'],
+    queryFn: async () => {
+      try {
+        const response = await fetch('/api/esg/securities');
+        if (!response.ok) {
+          return []; // Return empty array for now until API is fully implemented
+        }
+        return response.json();
+      } catch (error) {
+        console.error("Error fetching ESG securities:", error);
+        return []; // Return empty array for now
+      }
+    },
+  });
+  
+  // Fetch user's ESG portfolios
+  const { data: userPortfolios, isLoading: isLoadingPortfolios } = useQuery({
+    queryKey: ['/api/esg/portfolios/user/1'], // Hardcoded user ID for now
+    queryFn: async () => {
+      try {
+        const response = await fetch('/api/esg/portfolios/user/1');
+        if (!response.ok) {
+          return []; // Return empty array for now until API is fully implemented
+        }
+        return response.json();
+      } catch (error) {
+        console.error("Error fetching user portfolios:", error);
+        return []; // Return empty array for now
+      }
+    },
+  });
+  
   // Carbon reduction opportunities value (in tons)
   const reductionOpportunities = 42;
   
   // Potential financial value (estimated)
   const potentialValue = reductionOpportunities * 45; // $45 per ton
+  
+  // Join the waitlist function
+  const handleJoinWaitlist = async () => {
+    try {
+      await apiRequest("POST", "/api/esg/waitlist", { email: "user@example.com" }); // In a real app, we'd collect email
+      toast({
+        title: "Success!",
+        description: "You have been added to the waitlist. We'll notify you when the full trading platform is available.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to join the waitlist. Please try again later.",
+        variant: "destructive",
+      });
+    }
+  };
   
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -297,38 +370,351 @@ export default function ESGTradingPage() {
                 Buy, sell or offset carbon credits based on your reduction achievements
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center py-10">
-              <div className="text-center mb-6">
-                <p className="text-lg font-medium">Trading Platform Coming Soon</p>
-                <p className="text-muted-foreground">
-                  Our full carbon credit trading platform is under development
-                </p>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Join the Waitlist</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Be the first to access our trading platform when it launches
-                    </p>
-                    <Button className="w-full">Join Waitlist</Button>
-                  </CardContent>
-                </Card>
+            <CardContent>
+              <Tabs defaultValue="market">
+                <TabsList className="mb-4">
+                  <TabsTrigger value="market">Market</TabsTrigger>
+                  <TabsTrigger value="portfolio">Your Portfolio</TabsTrigger>
+                  <TabsTrigger value="transactions">Transactions</TabsTrigger>
+                </TabsList>
                 
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Request Demo</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Schedule a demonstration of the upcoming trading features
-                    </p>
-                    <Button variant="outline" className="w-full">Request Demo</Button>
-                  </CardContent>
-                </Card>
+                <TabsContent value="market" className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-lg font-semibold">ESG Securities</h3>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm">
+                          Filter
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          Sort
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    {isLoadingSecurities ? (
+                      <div className="py-8 flex justify-center">
+                        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+                      </div>
+                    ) : esgSecurities && esgSecurities.length > 0 ? (
+                      <div className="rounded-md border">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Symbol</TableHead>
+                              <TableHead>Name</TableHead>
+                              <TableHead>Price</TableHead>
+                              <TableHead>24h Change</TableHead>
+                              <TableHead>ESG Score</TableHead>
+                              <TableHead>Action</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {/* Show real securities data once available */}
+                            <TableRow>
+                              <TableCell className="font-medium">MSFT</TableCell>
+                              <TableCell>Microsoft Corp</TableCell>
+                              <TableCell>$337.45</TableCell>
+                              <TableCell className="text-green-600">+1.2%</TableCell>
+                              <TableCell>A-</TableCell>
+                              <TableCell><Button size="sm">Trade</Button></TableCell>
+                            </TableRow>
+                            <TableRow>
+                              <TableCell className="font-medium">AAPL</TableCell>
+                              <TableCell>Apple Inc</TableCell>
+                              <TableCell>$165.33</TableCell>
+                              <TableCell className="text-red-600">-0.8%</TableCell>
+                              <TableCell>B+</TableCell>
+                              <TableCell><Button size="sm">Trade</Button></TableCell>
+                            </TableRow>
+                            <TableRow>
+                              <TableCell className="font-medium">TSLA</TableCell>
+                              <TableCell>Tesla Inc</TableCell>
+                              <TableCell>$169.48</TableCell>
+                              <TableCell className="text-green-600">+2.3%</TableCell>
+                              <TableCell>A</TableCell>
+                              <TableCell><Button size="sm">Trade</Button></TableCell>
+                            </TableRow>
+                          </TableBody>
+                        </Table>
+                      </div>
+                    ) : (
+                      <div className="py-8 text-center">
+                        <p className="text-muted-foreground">No securities available at the moment</p>
+                      </div>
+                    )}
+                    
+                    <div className="flex justify-between items-center mt-8">
+                      <h3 className="text-lg font-semibold">ESG Companies</h3>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm">
+                          View All
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    {isLoadingCompanies ? (
+                      <div className="py-8 flex justify-center">
+                        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+                      </div>
+                    ) : esgCompanies && esgCompanies.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* Sample company cards - will be populated with real data */}
+                        <Card>
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-lg">Microsoft</CardTitle>
+                            <CardDescription>Technology</CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-2">
+                              <div className="flex justify-between">
+                                <span className="text-sm text-muted-foreground">ESG Rating:</span>
+                                <span className="font-medium">A-</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-sm text-muted-foreground">Carbon Intensity:</span>
+                                <span className="font-medium">Low</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-sm text-muted-foreground">Net Zero Target:</span>
+                                <span className="font-medium">2030</span>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                        
+                        <Card>
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-lg">Tesla</CardTitle>
+                            <CardDescription>Automotive</CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-2">
+                              <div className="flex justify-between">
+                                <span className="text-sm text-muted-foreground">ESG Rating:</span>
+                                <span className="font-medium">A</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-sm text-muted-foreground">Carbon Intensity:</span>
+                                <span className="font-medium">Very Low</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-sm text-muted-foreground">Net Zero Target:</span>
+                                <span className="font-medium">2025</span>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                        
+                        <Card>
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-lg">ExxonMobil</CardTitle>
+                            <CardDescription>Energy</CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-2">
+                              <div className="flex justify-between">
+                                <span className="text-sm text-muted-foreground">ESG Rating:</span>
+                                <span className="font-medium">C</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-sm text-muted-foreground">Carbon Intensity:</span>
+                                <span className="font-medium">Very High</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-sm text-muted-foreground">Net Zero Target:</span>
+                                <span className="font-medium">2050</span>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    ) : (
+                      <div className="py-8 text-center">
+                        <p className="text-muted-foreground">No companies available at the moment</p>
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="portfolio" className="space-y-6">
+                  {isLoadingPortfolios ? (
+                    <div className="py-8 flex justify-center">
+                      <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+                    </div>
+                  ) : userPortfolios && userPortfolios.length > 0 ? (
+                    <div className="space-y-6">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Sustainable Growth Portfolio</CardTitle>
+                          <CardDescription>Created on April 15, 2025</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-4">
+                            <div className="flex justify-between pb-4 border-b">
+                              <div>
+                                <p className="text-sm text-muted-foreground">Total Value</p>
+                                <p className="text-2xl font-bold">$24,680.45</p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-muted-foreground">Return</p>
+                                <p className="text-xl font-semibold text-green-600">+12.4%</p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-muted-foreground">Carbon Footprint</p>
+                                <p className="text-xl font-semibold text-blue-600">-28% vs. Index</p>
+                              </div>
+                            </div>
+                            
+                            <h4 className="font-medium">Holdings</h4>
+                            <div className="rounded-md border">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead>Security</TableHead>
+                                    <TableHead>Shares</TableHead>
+                                    <TableHead>Price</TableHead>
+                                    <TableHead>Value</TableHead>
+                                    <TableHead>ESG Rating</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  <TableRow>
+                                    <TableCell className="font-medium">MSFT</TableCell>
+                                    <TableCell>15</TableCell>
+                                    <TableCell>$337.45</TableCell>
+                                    <TableCell>$5,061.75</TableCell>
+                                    <TableCell>A-</TableCell>
+                                  </TableRow>
+                                  <TableRow>
+                                    <TableCell className="font-medium">AAPL</TableCell>
+                                    <TableCell>25</TableCell>
+                                    <TableCell>$165.33</TableCell>
+                                    <TableCell>$4,133.25</TableCell>
+                                    <TableCell>B+</TableCell>
+                                  </TableRow>
+                                  <TableRow>
+                                    <TableCell className="font-medium">TSLA</TableCell>
+                                    <TableCell>20</TableCell>
+                                    <TableCell>$169.48</TableCell>
+                                    <TableCell>$3,389.60</TableCell>
+                                    <TableCell>A</TableCell>
+                                  </TableRow>
+                                </TableBody>
+                              </Table>
+                            </div>
+                            
+                            <div className="flex justify-end gap-2">
+                              <Button variant="outline">Rebalance</Button>
+                              <Button>Add Holdings</Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  ) : (
+                    <div className="p-8 flex flex-col items-center justify-center bg-muted/30 rounded-lg">
+                      <h3 className="text-xl font-medium mb-2">Create Your First Portfolio</h3>
+                      <p className="text-muted-foreground text-center max-w-md mb-6">
+                        Start your sustainable investing journey by creating an ESG-focused portfolio
+                      </p>
+                      <Button size="lg">Create Portfolio</Button>
+                    </div>
+                  )}
+                </TabsContent>
+                
+                <TabsContent value="transactions" className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-semibold">Recent Transactions</h3>
+                    <Button variant="outline" size="sm">
+                      Export History
+                    </Button>
+                  </div>
+                  
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Security</TableHead>
+                          <TableHead>Quantity</TableHead>
+                          <TableHead>Price</TableHead>
+                          <TableHead>Total</TableHead>
+                          <TableHead>Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow>
+                          <TableCell>Apr 18, 2025</TableCell>
+                          <TableCell>Buy</TableCell>
+                          <TableCell>MSFT</TableCell>
+                          <TableCell>5</TableCell>
+                          <TableCell>$334.21</TableCell>
+                          <TableCell>$1,671.05</TableCell>
+                          <TableCell>Completed</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>Apr 15, 2025</TableCell>
+                          <TableCell>Buy</TableCell>
+                          <TableCell>AAPL</TableCell>
+                          <TableCell>10</TableCell>
+                          <TableCell>$164.90</TableCell>
+                          <TableCell>$1,649.00</TableCell>
+                          <TableCell>Completed</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>Apr 15, 2025</TableCell>
+                          <TableCell>Buy</TableCell>
+                          <TableCell>TSLA</TableCell>
+                          <TableCell>8</TableCell>
+                          <TableCell>$166.75</TableCell>
+                          <TableCell>$1,334.00</TableCell>
+                          <TableCell>Completed</TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+                  
+                  <div className="flex justify-center">
+                    <Button variant="outline">Load More</Button>
+                  </div>
+                </TabsContent>
+              </Tabs>
+              
+              <div className="border-t mt-8 pt-8">
+                <div className="text-center mb-6">
+                  <h3 className="text-xl font-medium mb-2">Advanced Trading Platform Beta</h3>
+                  <p className="text-muted-foreground max-w-xl mx-auto">
+                    Our full carbon credit trading platform with advanced analytics and automated ESG screening is available for beta testing.
+                  </p>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Join the Waitlist</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Be the first to access our advanced trading features when they launch
+                      </p>
+                      <Button className="w-full" onClick={handleJoinWaitlist}>Join Waitlist</Button>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Request Demo</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Schedule a demonstration of the upcoming trading features
+                      </p>
+                      <Button variant="outline" className="w-full">Request Demo</Button>
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
             </CardContent>
           </Card>
