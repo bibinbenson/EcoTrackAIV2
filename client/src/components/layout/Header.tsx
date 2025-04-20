@@ -53,7 +53,7 @@ export default function Header({ currentPath }: HeaderProps) {
   const navScrollRef = useRef<HTMLDivElement>(null);
   const isSupplyChainActive = supplyChainItems.some(item => currentPath === item.href);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const buttonRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -162,31 +162,37 @@ export default function Header({ currentPath }: HeaderProps) {
             
             {/* Supply Chain Navigation - Desktop */}
             <div className="relative">
-              <div 
+              <button
                 ref={buttonRef}
-                className={`px-3 py-1.5 rounded-md flex items-center text-sm font-medium cursor-pointer transition-colors whitespace-nowrap ${
+                className={`px-3 py-1.5 rounded-md flex items-center text-sm font-medium cursor-pointer transition-colors whitespace-nowrap border-0 bg-transparent ${
                   isSupplyChainActive || supplyChainOpen
                     ? "text-primary bg-primary/5" 
                     : "text-neutral-600 hover:text-primary hover:bg-neutral-50"
                 }`}
                 onClick={() => setSupplyChainOpen(prev => !prev)}
+                aria-haspopup="true"
+                aria-expanded={supplyChainOpen}
               >
                 <Truck className="h-4 w-4 mr-1.5" />
                 <span>Supply Chain</span>
                 <ChevronDown className={`ml-1 h-3.5 w-3.5 transition-transform ${supplyChainOpen ? 'transform rotate-180' : ''}`} />
-              </div>
+              </button>
               
               {/* Supply Chain Dropdown - Desktop */}
               {supplyChainOpen && (
                 <div 
                   ref={dropdownRef}
                   className="absolute left-0 mt-1 w-44 bg-white rounded-md shadow-lg py-1 z-10 border border-neutral-100"
+                  role="menu"
                 >
                   {supplyChainItems.map((item) => (
                     <Link key={item.href} href={item.href}>
-                      <div className={`block px-4 py-1.5 text-sm flex items-center text-neutral-700 hover:bg-neutral-50 cursor-pointer ${
-                        currentPath === item.href ? "bg-primary/5 text-primary font-medium" : ""
-                      }`}>
+                      <div 
+                        className={`block px-4 py-1.5 text-sm flex items-center text-neutral-700 hover:bg-neutral-50 cursor-pointer ${
+                          currentPath === item.href ? "bg-primary/5 text-primary font-medium" : ""
+                        }`}
+                        role="menuitem"
+                      >
                         <span className="mr-2">{item.icon}</span>
                         {item.label}
                       </div>
@@ -282,28 +288,33 @@ export default function Header({ currentPath }: HeaderProps) {
                         Supply Chain
                       </h3>
                       
-                      <div 
-                        className={`px-3 py-2 rounded-md flex items-center justify-between font-medium cursor-pointer ${
+                      <button
+                        className={`px-3 py-2 rounded-md flex items-center justify-between font-medium cursor-pointer w-full text-left border-0 bg-transparent ${
                           isSupplyChainActive ? "bg-primary/10 text-primary" : "text-neutral-800 hover:bg-neutral-50"
                         }`}
                         onClick={() => setMobileSupplyChainOpen(prev => !prev)}
+                        aria-haspopup="true"
+                        aria-expanded={mobileSupplyChainOpen}
                       >
                         <div className="flex items-center">
                           <Truck className="h-4 w-4 mr-2" />
                           <span>Supply Chain</span>
                         </div>
                         <ChevronDown className={`h-4 w-4 transition-transform ${mobileSupplyChainOpen ? 'transform rotate-180' : ''}`} />
-                      </div>
+                      </button>
                       
                       {mobileSupplyChainOpen && (
-                        <div className="ml-7 border-l border-neutral-200 pl-2 mt-1">
+                        <div className="ml-7 border-l border-neutral-200 pl-2 mt-1" role="menu">
                           {supplyChainItems.map((item) => (
                             <Link key={item.href} href={item.href}>
-                              <div className={`px-3 py-2 rounded-md text-sm font-medium cursor-pointer ${
-                                currentPath === item.href
-                                  ? "bg-primary/10 text-primary"
-                                  : "text-neutral-700 hover:bg-neutral-50"
-                              }`}>
+                              <div 
+                                className={`px-3 py-2 rounded-md text-sm font-medium cursor-pointer ${
+                                  currentPath === item.href
+                                    ? "bg-primary/10 text-primary"
+                                    : "text-neutral-700 hover:bg-neutral-50"
+                                }`}
+                                role="menuitem"
+                              >
                                 {item.label}
                               </div>
                             </Link>
