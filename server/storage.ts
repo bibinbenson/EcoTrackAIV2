@@ -1947,5 +1947,23 @@ DatabaseStorage.prototype.getUserMonthlyReductionPercentage = async function(use
   return databaseAchievementTracking.getUserMonthlyReductionPercentage(userId, this);
 };
 
+// Add the missing updateUserAchievement method
+DatabaseStorage.prototype.updateUserAchievement = async function(
+  id: number, 
+  data: Partial<UserAchievement>
+): Promise<UserAchievement | undefined> {
+  const [updatedUserAchievement] = await db
+    .update(userAchievements)
+    .set({
+      progress: data.progress,
+      isCompleted: data.isCompleted,
+      dateEarned: data.dateEarned
+    })
+    .where(eq(userAchievements.id, id))
+    .returning();
+  
+  return updatedUserAchievement;
+};
+
 // Export an instance of the DatabaseStorage
 export const storage = new DatabaseStorage();
