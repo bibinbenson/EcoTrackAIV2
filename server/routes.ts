@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
+import { AchievementProcessor } from "./achievementProcessor";
 import {
   insertUserSchema,
   insertActivitySchema,
@@ -107,6 +108,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Simple scoring: higher is better (less carbon)
       const newScore = Math.max(0, 100 - Math.floor(totalFootprint / 10));
       await storage.updateUserScore(1, newScore);
+      
+      // Process achievements after creating the activity
+      await AchievementProcessor.processActivity(activity, 1);
       
       return res.status(201).json(activity);
     } catch (error) {

@@ -47,6 +47,11 @@ export interface IStorage {
   getAchievement(id: number): Promise<Achievement | undefined>;
   getAllAchievements(): Promise<Achievement[]>;
   createAchievement(achievement: InsertAchievement): Promise<Achievement>;
+  getUserActivityCount(userId: number): Promise<number>;
+  getUserActivityCountByCategory(userId: number, categoryId: number): Promise<number>;
+  getUserConsecutiveDays(userId: number): Promise<number>;
+  getUserCarbonReduction(userId: number): Promise<number>;
+  getUserMonthlyReductionPercentage(userId: number): Promise<number>;
   
   // Eco-Reward operations
   getEcoReward(id: number): Promise<EcoReward | undefined>;
