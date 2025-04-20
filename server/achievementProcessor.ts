@@ -67,13 +67,13 @@ export class AchievementProcessor {
           achievementId: achievement.id,
           progress,
           isCompleted,
-          dateEarned: isCompleted ? new Date() : null
+          dateEarned: new Date() // Always set a date, required by database constraint
         });
       } else {
         await storage.updateUserAchievement(userAchievement.id, {
           progress,
           isCompleted,
-          dateEarned: isCompleted ? new Date() : null
+          dateEarned: userAchievement.dateEarned || new Date() // Keep existing date or set new one
         });
       }
       

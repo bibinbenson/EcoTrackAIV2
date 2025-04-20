@@ -1,6 +1,5 @@
-import CarbonCalculator from "@/components/calculator/CarbonCalculator";
-import ActivityLogForm from "@/components/calculator/ActivityLogForm";
 import SimpleActivityForm from "@/components/calculator/SimpleActivityForm";
+import AdvancedCalculator from "@/components/calculator/AdvancedCalculator";
 import SustainabilityTip from "@/components/education/SustainabilityTip";
 
 export default function Calculator() {
@@ -19,11 +18,7 @@ export default function Calculator() {
           <SimpleActivityForm />
           
           <div className="mt-6">
-            <CarbonCalculator />
-          </div>
-          
-          <div className="mt-6">
-            <ActivityLogForm />
+            <AdvancedCalculator />
           </div>
         </div>
         
