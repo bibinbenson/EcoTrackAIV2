@@ -189,10 +189,8 @@ export default function Header({ currentPath }: HeaderProps) {
               {/* Supply Chain Dropdown - Desktop */}
               <div 
                 ref={dropdownRef}
-                className={`absolute left-0 mt-1 w-48 bg-white rounded-md shadow-lg py-1 z-10 border border-neutral-100 transition-all duration-150 origin-top-left ${
-                  supplyChainOpen 
-                    ? "opacity-100 scale-100 translate-y-0" 
-                    : "opacity-0 scale-95 -translate-y-2 pointer-events-none"
+                className={`absolute left-0 mt-1 w-48 bg-white rounded-md shadow-lg py-1 z-10 border border-neutral-100 ${
+                  supplyChainOpen ? "block" : "hidden"
                 }`}
                 role="menu"
               >
