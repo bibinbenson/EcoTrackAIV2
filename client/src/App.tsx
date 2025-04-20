@@ -26,6 +26,10 @@ import Suppliers from "@/pages/suppliers";
 import SupplierEmissions from "@/pages/supplier-emissions";
 import SupplyChainRisks from "@/pages/supply-chain-risks";
 
+// Beta-specific pages
+import Onboarding from "@/pages/onboarding";
+import Feedback from "@/pages/feedback";
+
 function Router() {
   return (
     <Switch>
@@ -48,6 +52,10 @@ function Router() {
       <Route path="/suppliers" component={Suppliers} />
       <Route path="/supplier-emissions" component={SupplierEmissions} />
       <Route path="/supply-chain-risks" component={SupplyChainRisks} />
+      
+      {/* Beta-specific Routes */}
+      <Route path="/onboarding" component={Onboarding} />
+      <Route path="/feedback" component={Feedback} />
       
       <Route component={NotFound} />
     </Switch>
