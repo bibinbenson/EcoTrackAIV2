@@ -13,11 +13,24 @@ export const users = pgTable("users", {
   lastName: text("last_name").notNull(),
   avatarUrl: text("avatar_url"),
   score: integer("score").default(0).notNull(),
+  accountType: text("account_type").default("user").notNull(), // "user", "beta", "admin"
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  lastLogin: timestamp("last_login"),
+  onboardingCompleted: boolean("onboarding_completed").default(false).notNull(),
+  preferences: jsonb("preferences"), // user preferences like notifications, theme, etc.
+  betaFeedbackProvided: boolean("beta_feedback_provided").default(false).notNull(),
+  isEmailVerified: boolean("is_email_verified").default(false).notNull(),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
-  score: true
+  score: true,
+  createdAt: true,
+  lastLogin: true,
+  onboardingCompleted: true,
+  betaFeedbackProvided: true,
+  isEmailVerified: true,
+  preferences: true
 });
 
 // Carbon activity categories
@@ -442,14 +455,72 @@ export const carbonReductionGoalsRelations = relations(carbonReductionGoals, ({ 
   })
 }));
 
-// Update user relations to include goals
+// User feedback for beta users
+export const userFeedback = pgTable("user_feedback", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  feedbackType: text("feedback_type").notNull(), // "suggestion", "bug", "feature", "general"
+  content: text("content").notNull(),
+  rating: integer("rating"), // 1-5 stars 
+  pageContext: text("page_context"), // where in the app was the user when they gave feedback
+  status: text("status").default("new").notNull(), // "new", "in-review", "resolved"
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+export const insertUserFeedbackSchema = createInsertSchema(userFeedback).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  status: true
+});
+
+// Error logging for QA
+export const errorLogs = pgTable("error_logs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id"),
+  errorMessage: text("error_message").notNull(),
+  stackTrace: text("stack_trace"),
+  url: text("url"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  resolved: boolean("resolved").default(false).notNull(),
+  resolution: text("resolution"),
+  severity: text("severity").default("medium").notNull() // "low", "medium", "high", "critical"
+});
+
+export const insertErrorLogSchema = createInsertSchema(errorLogs).omit({
+  id: true,
+  createdAt: true,
+  resolved: true,
+  resolution: true
+});
+
+// User activity tracking
+export const userActivity = pgTable("user_activity", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  activityType: text("activity_type").notNull(), // "login", "page_view", "feature_use", "onboarding_step"
+  details: jsonb("details"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  sessionId: text("session_id")
+});
+
+export const insertUserActivitySchema = createInsertSchema(userActivity).omit({
+  id: true,
+  createdAt: true
+});
+
+// Update user relations to include goals and feedback
 export const usersRelationsUpdated = relations(users, ({ many }) => ({
   activities: many(activities),
   userAchievements: many(userAchievements),
   offsetPurchases: many(offsetPurchases),
   supplierAssessments: many(supplierAssessments),
   supplyChainRisks: many(supplyChainRisks),
-  carbonReductionGoals: many(carbonReductionGoals)
+  carbonReductionGoals: many(carbonReductionGoals),
+  feedback: many(userFeedback),
+  activityLogs: many(userActivity)
 }));
 
 // Type exports
@@ -503,3 +574,12 @@ export type InsertEcoReward = z.infer<typeof insertEcoRewardSchema>;
 
 export type UserReward = typeof userRewards.$inferSelect;
 export type InsertUserReward = z.infer<typeof insertUserRewardSchema>;
+
+export type UserFeedback = typeof userFeedback.$inferSelect;
+export type InsertUserFeedback = z.infer<typeof insertUserFeedbackSchema>;
+
+export type ErrorLog = typeof errorLogs.$inferSelect;
+export type InsertErrorLog = z.infer<typeof insertErrorLogSchema>;
+
+export type UserActivityLog = typeof userActivity.$inferSelect;
+export type InsertUserActivityLog = z.infer<typeof insertUserActivitySchema>;

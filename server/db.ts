@@ -1,5 +1,6 @@
 import { Pool, neonConfig } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-serverless';
+import { sql } from 'drizzle-orm';
 import ws from "ws";
 import * as schema from "@shared/schema";
 import { eq } from "drizzle-orm";
@@ -17,6 +18,83 @@ export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 export const db = drizzle(pool, { schema });
 
 // Initialize default data for the database if it doesn't exist
+// Perform database migrations to add new columns and tables
+export async function migrateDatabase() {
+  console.log("Starting database migration...");
+  try {
+    // Check if we need to migrate the users table
+    try {
+      // Try to query a column that should exist in the new schema
+      await db.execute(sql`SELECT account_type FROM users LIMIT 1`);
+      console.log("User table already migrated.");
+    } catch (error) {
+      // Column doesn't exist, need to add new columns
+      console.log("Migrating users table...");
+      
+      // Add the new columns to the users table
+      await db.execute(sql`
+        ALTER TABLE users 
+        ADD COLUMN IF NOT EXISTS account_type TEXT NOT NULL DEFAULT 'user',
+        ADD COLUMN IF NOT EXISTS created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        ADD COLUMN IF NOT EXISTS last_login TIMESTAMP,
+        ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN NOT NULL DEFAULT false,
+        ADD COLUMN IF NOT EXISTS preferences JSONB,
+        ADD COLUMN IF NOT EXISTS beta_feedback_provided BOOLEAN NOT NULL DEFAULT false,
+        ADD COLUMN IF NOT EXISTS is_email_verified BOOLEAN NOT NULL DEFAULT false
+      `);
+      console.log("Users table migration completed.");
+    }
+
+    // Create user_feedback table if it doesn't exist
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS user_feedback (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        feedback_type TEXT NOT NULL,
+        content TEXT NOT NULL,
+        rating INTEGER,
+        page_context TEXT,
+        status TEXT NOT NULL DEFAULT 'new',
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    // Create error_logs table if it doesn't exist
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS error_logs (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER,
+        error_message TEXT NOT NULL,
+        stack_trace TEXT,
+        url TEXT,
+        user_agent TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        resolved BOOLEAN NOT NULL DEFAULT false,
+        resolution TEXT,
+        severity TEXT NOT NULL DEFAULT 'medium'
+      )
+    `);
+
+    // Create user_activity table if it doesn't exist
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS user_activity (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        activity_type TEXT NOT NULL,
+        details JSONB,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        session_id TEXT
+      )
+    `);
+
+    console.log("Database migration completed successfully");
+  } catch (error) {
+    console.error("Error during database migration:", error);
+    throw error;
+  }
+}
+
 export async function initializeDefaultData() {
   try {
     // Check if we have eco rewards

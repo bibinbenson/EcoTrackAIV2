@@ -39,6 +39,17 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // First perform database migrations
+  const { migrateDatabase } = await import('./db');
+  try {
+    console.log("Starting database migration...");
+    await migrateDatabase();
+    console.log("Database migration completed successfully");
+  } catch (error) {
+    console.error("Error during database migration:", error);
+    // Don't exit, just log the error and continue
+  }
+  
   // Initialize default data in the database - achieve and rewards seeding 
   const { seedData } = await import('./seeders/index');
   await seedData();

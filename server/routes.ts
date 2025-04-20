@@ -17,7 +17,10 @@ import {
   insertCarbonReductionGoalSchema,
   insertEcoRewardSchema,
   insertUserRewardSchema,
-  insertAchievementSchema
+  insertAchievementSchema,
+  insertUserFeedbackSchema,
+  insertErrorLogSchema,
+  insertUserActivitySchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -891,6 +894,138 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error getting carbon breakdown:", error);
       return res.status(500).json({ message: "Error getting carbon breakdown", error });
+    }
+  });
+
+  // Beta user feedback and error logging routes
+  app.post("/api/feedback", async (req: Request, res: Response) => {
+    try {
+      // For simplicity, force userId to 1
+      const feedbackData = {
+        ...req.body,
+        userId: 1
+      };
+      
+      const validatedData = insertUserFeedbackSchema.parse(feedbackData);
+      
+      // Create user feedback
+      const feedback = await storage.createUserFeedback(validatedData);
+      
+      // Update user profile to mark that they've provided feedback
+      await storage.updateUserBetaFeedbackStatus(1, true);
+      
+      return res.status(201).json(feedback);
+    } catch (error) {
+      console.error("Error creating user feedback:", error);
+      return res.status(400).json({ message: "Invalid feedback data", error });
+    }
+  });
+
+  app.get("/api/feedback", async (_req: Request, res: Response) => {
+    // Get all feedback from current user
+    const userId = 1; // For simplicity, use fixed user
+    const feedback = await storage.getUserFeedback(userId);
+    return res.json(feedback);
+  });
+
+  // Error logging API for client-side errors
+  app.post("/api/error-logs", async (req: Request, res: Response) => {
+    try {
+      // Optionally include user ID if available
+      const errorData = {
+        ...req.body,
+        userId: 1, // For logged-in users
+        userAgent: req.headers["user-agent"]
+      };
+      
+      const validatedData = insertErrorLogSchema.parse(errorData);
+      
+      // Log the error
+      const errorLog = await storage.createErrorLog(validatedData);
+      
+      return res.status(201).json({ 
+        id: errorLog.id,
+        message: "Error logged successfully" 
+      });
+    } catch (error) {
+      console.error("Error logging client error:", error);
+      // Still return success even if there's an issue with our error logging
+      // to avoid creating an error loop on the client
+      return res.status(201).json({ 
+        message: "Error received but couldn't be logged properly" 
+      });
+    }
+  });
+
+  // User activity tracking for analytics
+  app.post("/api/user-activity", async (req: Request, res: Response) => {
+    try {
+      // For simplicity, force userId to 1
+      const activityData = {
+        ...req.body,
+        userId: 1
+      };
+      
+      const validatedData = insertUserActivitySchema.parse(activityData);
+      
+      // Log user activity
+      const activity = await storage.createUserActivityLog(validatedData);
+      
+      return res.status(201).json({
+        id: activity.id,
+        message: "Activity logged successfully"
+      });
+    } catch (error) {
+      console.error("Error logging user activity:", error);
+      // Still return success to avoid disrupting the user experience
+      return res.status(201).json({
+        message: "Activity received but couldn't be logged properly"
+      });
+    }
+  });
+
+  // User onboarding tracking
+  app.post("/api/onboarding/complete", async (req: Request, res: Response) => {
+    try {
+      const userId = 1; // For simplicity, use fixed user
+      await storage.updateUserOnboardingStatus(userId, true);
+      
+      // Also log this as a user activity
+      await storage.createUserActivityLog({
+        userId,
+        activityType: "onboarding_complete",
+        details: { timestamp: new Date().toISOString() },
+        sessionId: req.body.sessionId
+      });
+      
+      return res.status(200).json({ 
+        message: "Onboarding status updated successfully" 
+      });
+    } catch (error) {
+      console.error("Error updating onboarding status:", error);
+      return res.status(500).json({ 
+        message: "Failed to update onboarding status" 
+      });
+    }
+  });
+
+  app.get("/api/onboarding/status", async (_req: Request, res: Response) => {
+    try {
+      const userId = 1; // For simplicity, use fixed user
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      return res.status(200).json({ 
+        onboardingCompleted: user.onboardingCompleted 
+      });
+    } catch (error) {
+      console.error("Error retrieving onboarding status:", error);
+      return res.status(500).json({ 
+        message: "Failed to retrieve onboarding status" 
+      });
     }
   });
 

@@ -14,7 +14,10 @@ import {
   supplyChainRisks, SupplyChainRisk, InsertSupplyChainRisk,
   carbonReductionGoals, CarbonReductionGoal, InsertCarbonReductionGoal,
   ecoRewards, EcoReward, InsertEcoReward,
-  userRewards, UserReward, InsertUserReward
+  userRewards, UserReward, InsertUserReward,
+  userFeedback, UserFeedback, InsertUserFeedback,
+  errorLogs, ErrorLog, InsertErrorLog,
+  userActivity, UserActivityLog, InsertUserActivityLog
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, between, count, sum } from "drizzle-orm";
@@ -147,6 +150,20 @@ export interface IStorage {
   getUserRedeemedRewards(userId: number): Promise<UserReward[]>;
   createUserReward(userReward: InsertUserReward): Promise<UserReward>;
   redeemUserReward(userRewardId: number, userId: number, customRedemptionCode?: string): Promise<UserReward | undefined>;
+  
+  // Beta user operations
+  createUserFeedback(feedback: InsertUserFeedback): Promise<UserFeedback>;
+  getUserFeedback(userId: number): Promise<UserFeedback[]>;
+  updateUserBetaFeedbackStatus(userId: number, provided: boolean): Promise<User | undefined>;
+  updateUserOnboardingStatus(userId: number, completed: boolean): Promise<User | undefined>;
+  
+  // Error tracking operations
+  createErrorLog(errorLog: InsertErrorLog): Promise<ErrorLog>;
+  getErrorLogs(): Promise<ErrorLog[]>;
+  
+  // User analytics operations
+  createUserActivityLog(activityLog: InsertUserActivityLog): Promise<UserActivityLog>;
+  getUserActivityLogs(userId: number): Promise<UserActivityLog[]>;
 }
 
 // In-memory implementation of storage
@@ -167,6 +184,9 @@ export class MemStorage implements IStorage {
   private carbonReductionGoals: Map<number, CarbonReductionGoal>;
   private ecoRewards: Map<number, EcoReward>;
   private userRewards: Map<number, UserReward>;
+  private userFeedback: Map<number, UserFeedback>;
+  private errorLogs: Map<number, ErrorLog>;
+  private userActivityLogs: Map<number, UserActivityLog>;
   
   private userCurrentId: number;
   private categoryCurrentId: number;
@@ -202,6 +222,9 @@ export class MemStorage implements IStorage {
     this.carbonReductionGoals = new Map();
     this.ecoRewards = new Map();
     this.userRewards = new Map();
+    this.userFeedback = new Map();
+    this.errorLogs = new Map();
+    this.userActivityLogs = new Map();
 
     this.userCurrentId = 1;
     this.categoryCurrentId = 1;
