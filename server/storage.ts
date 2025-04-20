@@ -1303,6 +1303,15 @@ export class DatabaseStorage implements IStorage {
     const [newActivity] = await db.insert(activities).values(activity).returning();
     return newActivity;
   }
+  
+  async deleteActivity(id: number): Promise<boolean> {
+    const result = await db
+      .delete(activities)
+      .where(eq(activities.id, id))
+      .returning({ id: activities.id });
+    
+    return result.length > 0;
+  }
 
   async getUserCarbonFootprint(userId: number, startDate?: Date, endDate?: Date): Promise<number> {
     // Base query builder with user filter
