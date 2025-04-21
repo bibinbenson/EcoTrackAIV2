@@ -229,14 +229,14 @@ export default function AdminDashboard() {
                   <label className="text-sm font-medium block mb-2">Start Date</label>
                   <DatePicker
                     date={filter.startDate}
-                    setDate={(date) => setFilter(prev => ({ ...prev, startDate: date || undefined }))}
+                    onSelect={(date) => setFilter(prev => ({ ...prev, startDate: date || undefined }))}
                   />
                 </div>
                 <div className="flex-1 min-w-[200px]">
                   <label className="text-sm font-medium block mb-2">End Date</label>
                   <DatePicker
                     date={filter.endDate}
-                    setDate={(date) => setFilter(prev => ({ ...prev, endDate: date || undefined }))}
+                    onSelect={(date) => setFilter(prev => ({ ...prev, endDate: date || undefined }))}
                   />
                 </div>
                 <div className="flex items-end">

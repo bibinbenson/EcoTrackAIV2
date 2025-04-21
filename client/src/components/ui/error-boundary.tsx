@@ -1,5 +1,12 @@
-import * as React from "react";
+import React from "react";
 import { logError } from "@/lib/error-logger";
+import { Button } from "@/components/ui/button";
+import { AlertCircle, RefreshCcw } from "lucide-react";
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
 
 /**
  * Error boundary component for React
@@ -7,7 +14,7 @@ import { logError } from "@/lib/error-logger";
  */
 export class ErrorBoundary extends React.Component<
   { children: React.ReactNode, fallback?: React.ReactNode },
-  { hasError: boolean; error: Error | null }
+  ErrorBoundaryState
 > {
   constructor(props: { children: React.ReactNode, fallback?: React.ReactNode }) {
     super(props);
@@ -15,30 +22,40 @@ export class ErrorBoundary extends React.Component<
   }
 
   static getDerivedStateFromError(error: Error) {
+    // Update state so the next render will show the fallback UI
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    logError(error, { severity: 'error' });
-    console.error('Component Error:', error, errorInfo);
+    // Log the error to our error tracking service
+    logError(error, {
+      componentStack: errorInfo.componentStack,
+      context: "ErrorBoundary"
+    });
   }
 
   render() {
     if (this.state.hasError) {
+      // You can render any custom fallback UI
       if (this.props.fallback) {
         return this.props.fallback;
       }
-      
+
       return (
-        <div className="p-4 border border-red-300 bg-red-50 rounded-md text-red-800">
-          <h2 className="text-lg font-semibold mb-2">Something went wrong</h2>
-          <p className="mb-2">{this.state.error?.message || 'An unknown error occurred'}</p>
-          <button
-            className="px-3 py-1 bg-red-100 hover:bg-red-200 border border-red-300 rounded-md"
+        <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-6 text-center">
+          <AlertCircle className="mx-auto h-10 w-10 text-destructive" />
+          <h3 className="mt-4 text-lg font-medium text-destructive">Something went wrong</h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {this.state.error?.message || "An unexpected error occurred"}
+          </p>
+          <Button
+            variant="outline"
+            className="mt-4"
             onClick={() => this.setState({ hasError: false, error: null })}
           >
+            <RefreshCcw className="mr-2 h-4 w-4" />
             Try again
-          </button>
+          </Button>
         </div>
       );
     }

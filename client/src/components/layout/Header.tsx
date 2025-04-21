@@ -356,6 +356,14 @@ export default function Header({ currentPath }: HeaderProps) {
                 
                 {/* Bottom Section with Log Activity button and Logout */}
                 <div className="mt-auto p-4 border-t border-neutral-200 space-y-2">
+                  {user?.accountType === "admin" && (
+                    <Link href="/admin-dashboard">
+                      <Button variant="outline" className="w-full mb-2">
+                        <BarChart2 className="mr-2 h-4 w-4" />
+                        Admin Dashboard
+                      </Button>
+                    </Link>
+                  )}
                   <Link href="/calculator">
                     <Button variant="default" className="w-full">
                       Log Activity
