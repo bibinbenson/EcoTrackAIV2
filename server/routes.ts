@@ -5,6 +5,7 @@ import { z } from "zod";
 import { AchievementProcessor } from "./achievementProcessor";
 import { carbonApiService } from "./services/carbonApiService";
 import { setupAuth } from "./auth";
+import { asyncHandler, ForbiddenError, BadRequestError } from './lib/error-handler';
 import {
   insertUserSchema,
   insertActivitySchema,
@@ -1130,54 +1131,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Use error handler utilities for better error handling
+  
   // Admin user activity logs API
-  app.get("/api/admin/activity-logs", async (req: Request, res: Response) => {
-    // Error handling wrapper
-    try {
-      // Requiring authentication for admin endpoints
-      if (!req.isAuthenticated() || req.user.accountType !== 'admin') {
-        return res.status(403).json({
-          status: "error",
-          message: "Unauthorized: Admin access required"
-        });
-      }
-      
-      // Extract filter parameters from query
-      const filter: {userId?: number, action?: string, startDate?: Date, endDate?: Date} = {};
-      
-      // Add userId filter if provided
-      if (req.query.userId && req.query.userId !== "") {
-        filter.userId = Number(req.query.userId);
-      }
-      
-      // Add action filter if provided
-      if (req.query.action && req.query.action !== "") {
-        filter.action = req.query.action as string;
-      }
-      
-      // Add date range filters if provided
-      if (req.query.startDate && req.query.startDate !== "") {
-        filter.startDate = new Date(req.query.startDate as string);
-      }
-      
-      if (req.query.endDate && req.query.endDate !== "") {
-        filter.endDate = new Date(req.query.endDate as string);
-      }
-      
-      // Get activity logs with filters
-      const logs = await storage.getUserActivityLogs(filter);
-      
-      // Return successful response
-      return res.status(200).json(logs);
-    } catch (error: any) {
-      // Log and return error response
-      console.error("Error fetching admin activity logs:", error);
-      return res.status(500).json({
-        status: "error",
-        message: "Failed to fetch activity logs: " + error.message
-      });
+  app.get("/api/admin/activity-logs", asyncHandler(async (req: Request, res: Response) => {
+    // Requiring authentication for admin endpoints
+    if (!req.isAuthenticated() || req.user.accountType !== 'admin') {
+      throw ForbiddenError("Unauthorized: Admin access required");
     }
-  });
+    
+    // Extract filter parameters from query
+    const filter: {userId?: number, action?: string, startDate?: Date, endDate?: Date} = {};
+    
+    // Add userId filter if provided (with validation)
+    if (req.query.userId && req.query.userId !== "") {
+      const userIdValue = Number(req.query.userId);
+      if (isNaN(userIdValue)) {
+        throw BadRequestError("Invalid userId parameter: must be a number");
+      }
+      filter.userId = userIdValue;
+    }
+    
+    // Add action filter if provided
+    if (req.query.action && req.query.action !== "") {
+      filter.action = req.query.action as string;
+    }
+    
+    // Add date range filters if provided (with validation)
+    if (req.query.startDate && req.query.startDate !== "") {
+      try {
+        filter.startDate = new Date(req.query.startDate as string);
+        // Check if date is valid
+        if (isNaN(filter.startDate.getTime())) {
+          throw new Error("Invalid date");
+        }
+      } catch (e) {
+        throw BadRequestError("Invalid startDate parameter: must be a valid date");
+      }
+    }
+    
+    if (req.query.endDate && req.query.endDate !== "") {
+      try {
+        filter.endDate = new Date(req.query.endDate as string);
+        // Check if date is valid
+        if (isNaN(filter.endDate.getTime())) {
+          throw new Error("Invalid date");
+        }
+      } catch (e) {
+        throw BadRequestError("Invalid endDate parameter: must be a valid date");
+      }
+    }
+    
+    // Get activity logs with filters
+    const logs = await storage.getUserActivityLogs(filter);
+    
+    // Return successful response
+    return res.status(200).json(logs);
+  }));
   
   // Admin dashboard analytics API
   app.get("/api/admin/analytics", async (req: Request, res: Response) => {

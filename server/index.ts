@@ -59,12 +59,34 @@ app.use((req, res, next) => {
   
   const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  // Global error handling middleware
+  app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
+    // Get status code from error object or default to 500
     const status = err.status || err.statusCode || 500;
+    
+    // Get message from error object or default to generic message
     const message = err.message || "Internal Server Error";
-
-    res.status(status).json({ message });
-    throw err;
+    
+    // Get error type for better error categorization
+    const errorType = err.name || "UnknownError";
+    
+    // Log detailed error information for debugging
+    console.error(`[ERROR] ${req.method} ${req.path} - ${status} ${errorType}: ${message}`);
+    if (err.stack) {
+      console.error(err.stack);
+    }
+    
+    // Prepare response with consistent error format
+    const errorResponse = {
+      status: "error",
+      message: message,
+      errorType: app.get("env") === "development" ? errorType : undefined,
+      // Include stack trace only in development environment
+      stack: app.get("env") === "development" ? err.stack : undefined
+    };
+    
+    // Send error response to client
+    res.status(status).json(errorResponse);
   });
 
   // importantly only setup vite in development and after
