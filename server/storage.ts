@@ -30,7 +30,7 @@ import {
   esgTransactions, EsgTransaction, InsertEsgTransaction
 } from "@shared/schema";
 import { db, pool } from "./db";
-import { eq, and, desc, between, count, sum } from "drizzle-orm";
+import { eq, and, desc, between, count, sum, sql } from "drizzle-orm";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import createMemoryStore from "memorystore";
