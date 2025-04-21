@@ -1436,9 +1436,9 @@ export class MemStorage implements IStorage {
   }
   
   // User analytics operations
-  async createUserActivityLog(activityLog: InsertUserActivityLog): Promise<UserActivityLog> {
+  async createUserActivity(activityLog: InsertUserActivity): Promise<UserActivity> {
     const id = this.userActivityLogCurrentId++;
-    const newLog: UserActivityLog = {
+    const newLog: UserActivity = {
       ...activityLog,
       id,
       createdAt: new Date()
@@ -1447,10 +1447,243 @@ export class MemStorage implements IStorage {
     return newLog;
   }
   
-  async getUserActivityLogs(userId: number): Promise<UserActivityLog[]> {
+  async getUserActivitiesLog(userId: number): Promise<UserActivity[]> {
     return Array.from(this.userActivityLogs.values())
       .filter(log => log.userId === userId)
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+  
+  // Admin dashboard methods
+  async createUserActivityLog(logData: InsertAdminUserLog): Promise<AdminUserLog> {
+    const id = this.adminLogCurrentId++;
+    const log: AdminUserLog = {
+      ...logData,
+      id,
+      createdAt: new Date()
+    };
+    this.adminLogs.set(id, log);
+    return log;
+  }
+
+  async getUserActivityLogs(filter?: {userId?: number, action?: string, startDate?: Date, endDate?: Date}): Promise<AdminUserLog[]> {
+    let logs = Array.from(this.adminLogs.values());
+    
+    if (filter) {
+      if (filter.userId) {
+        logs = logs.filter(log => log.userId === filter.userId);
+      }
+      if (filter.action) {
+        logs = logs.filter(log => log.action === filter.action);
+      }
+      if (filter.startDate) {
+        logs = logs.filter(log => log.createdAt >= filter.startDate);
+      }
+      if (filter.endDate) {
+        logs = logs.filter(log => log.createdAt <= filter.endDate);
+      }
+    }
+    
+    return logs.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+  
+  async getSystemStats(): Promise<SystemStat[]> {
+    return Array.from(this.systemStatsMap.values());
+  }
+  
+  async updateSystemStat(name: string, value: string, category: string): Promise<SystemStat> {
+    const existing = Array.from(this.systemStatsMap.values())
+      .find(stat => stat.name === name && stat.category === category);
+      
+    if (existing) {
+      existing.value = value;
+      existing.updatedAt = new Date();
+      this.systemStatsMap.set(existing.id.toString(), existing);
+      return existing;
+    }
+    
+    const id = this.systemStatCurrentId++;
+    const newStat: SystemStat = {
+      id,
+      name,
+      value,
+      category,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    this.systemStatsMap.set(id.toString(), newStat);
+    return newStat;
+  }
+  
+  async getUserSignupStats(period: 'daily' | 'weekly' | 'monthly'): Promise<{date: string, count: number}[]> {
+    const today = new Date();
+    const users = Array.from(this.users.values());
+    const result: {date: string, count: number}[] = [];
+    
+    // Group users by date according to the specified period
+    const dateMap = new Map<string, number>();
+    
+    if (period === 'daily') {
+      // Last 30 days
+      for (let i = 0; i < 30; i++) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        const dateString = date.toISOString().split('T')[0];
+        dateMap.set(dateString, 0);
+      }
+      
+      users.forEach(user => {
+        const dateString = user.createdAt.toISOString().split('T')[0];
+        if (dateMap.has(dateString)) {
+          dateMap.set(dateString, (dateMap.get(dateString) || 0) + 1);
+        }
+      });
+    } else if (period === 'weekly') {
+      // Last 12 weeks
+      for (let i = 0; i < 12; i++) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - (i * 7));
+        const weekStart = new Date(date);
+        weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+        const weekString = weekStart.toISOString().split('T')[0];
+        dateMap.set(weekString, 0);
+      }
+      
+      users.forEach(user => {
+        const userDate = new Date(user.createdAt);
+        const weekStart = new Date(userDate);
+        weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+        const weekString = weekStart.toISOString().split('T')[0];
+        if (dateMap.has(weekString)) {
+          dateMap.set(weekString, (dateMap.get(weekString) || 0) + 1);
+        }
+      });
+    } else {
+      // Last 12 months
+      for (let i = 0; i < 12; i++) {
+        const date = new Date(today);
+        date.setMonth(date.getMonth() - i);
+        const monthString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        dateMap.set(monthString, 0);
+      }
+      
+      users.forEach(user => {
+        const monthString = `${user.createdAt.getFullYear()}-${String(user.createdAt.getMonth() + 1).padStart(2, '0')}`;
+        if (dateMap.has(monthString)) {
+          dateMap.set(monthString, (dateMap.get(monthString) || 0) + 1);
+        }
+      });
+    }
+    
+    // Convert map to array and sort by date
+    dateMap.forEach((count, date) => {
+      result.push({ date, count });
+    });
+    
+    return result.sort((a, b) => a.date.localeCompare(b.date));
+  }
+  
+  async getActiveUserStats(period: 'daily' | 'weekly' | 'monthly'): Promise<{date: string, count: number}[]> {
+    // Similar to getUserSignupStats but uses lastLogin instead of createdAt
+    const today = new Date();
+    const users = Array.from(this.users.values()).filter(user => user.lastLogin !== null);
+    const result: {date: string, count: number}[] = [];
+    
+    // Group users by date according to the specified period
+    const dateMap = new Map<string, number>();
+    
+    if (period === 'daily') {
+      // Last 30 days
+      for (let i = 0; i < 30; i++) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        const dateString = date.toISOString().split('T')[0];
+        dateMap.set(dateString, 0);
+      }
+      
+      users.forEach(user => {
+        if (user.lastLogin) {
+          const dateString = user.lastLogin.toISOString().split('T')[0];
+          if (dateMap.has(dateString)) {
+            dateMap.set(dateString, (dateMap.get(dateString) || 0) + 1);
+          }
+        }
+      });
+    } else if (period === 'weekly') {
+      // Last 12 weeks
+      for (let i = 0; i < 12; i++) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - (i * 7));
+        const weekStart = new Date(date);
+        weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+        const weekString = weekStart.toISOString().split('T')[0];
+        dateMap.set(weekString, 0);
+      }
+      
+      users.forEach(user => {
+        if (user.lastLogin) {
+          const userDate = new Date(user.lastLogin);
+          const weekStart = new Date(userDate);
+          weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+          const weekString = weekStart.toISOString().split('T')[0];
+          if (dateMap.has(weekString)) {
+            dateMap.set(weekString, (dateMap.get(weekString) || 0) + 1);
+          }
+        }
+      });
+    } else {
+      // Last 12 months
+      for (let i = 0; i < 12; i++) {
+        const date = new Date(today);
+        date.setMonth(date.getMonth() - i);
+        const monthString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        dateMap.set(monthString, 0);
+      }
+      
+      users.forEach(user => {
+        if (user.lastLogin) {
+          const monthString = `${user.lastLogin.getFullYear()}-${String(user.lastLogin.getMonth() + 1).padStart(2, '0')}`;
+          if (dateMap.has(monthString)) {
+            dateMap.set(monthString, (dateMap.get(monthString) || 0) + 1);
+          }
+        }
+      });
+    }
+    
+    // Convert map to array and sort by date
+    dateMap.forEach((count, date) => {
+      result.push({ date, count });
+    });
+    
+    return result.sort((a, b) => a.date.localeCompare(b.date));
+  }
+  
+  async getUserCountByAccountType(): Promise<{accountType: string, count: number}[]> {
+    const accountTypes = new Map<string, number>();
+    
+    Array.from(this.users.values()).forEach(user => {
+      const accountType = user.accountType || 'individual';
+      accountTypes.set(accountType, (accountTypes.get(accountType) || 0) + 1);
+    });
+    
+    const result: {accountType: string, count: number}[] = [];
+    accountTypes.forEach((count, accountType) => {
+      result.push({ accountType, count });
+    });
+    
+    return result;
+  }
+  
+  async getTotalCarbonReduction(): Promise<number> {
+    // Sum up carbon reduction from all activities
+    const activities = Array.from(this.activities.values());
+    return activities.reduce((total, activity) => total + activity.carbonAmount, 0);
+  }
+  
+  async getTopPerformingUsers(limit: number = 10): Promise<User[]> {
+    return Array.from(this.users.values())
+      .sort((a, b) => (b.score || 0) - (a.score || 0))
+      .slice(0, limit);
   }
 }
 

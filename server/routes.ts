@@ -992,7 +992,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertUserActivitySchema.parse(activityData);
       
       // Log user activity
-      const activity = await storage.createUserActivityLog(validatedData);
+      const activity = await storage.createUserActivity(validatedData);
       
       return res.status(201).json({
         id: activity.id,
@@ -1014,7 +1014,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.updateUserOnboardingStatus(userId, true);
       
       // Also log this as a user activity
-      await storage.createUserActivityLog({
+      await storage.createUserActivity({
         userId,
         activityType: "onboarding_complete",
         details: { timestamp: new Date().toISOString() },
@@ -1061,7 +1061,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Track user activity
       if (req.isAuthenticated()) {
-        await storage.createUserActivityLog({
+        await storage.createUserActivity({
           userId: req.user.id,
           activityType: "ESG_TRADING_WAITLIST",
           details: { timestamp: new Date().toISOString() },
