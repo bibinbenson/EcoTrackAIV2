@@ -839,3 +839,24 @@ export type InsertEsgMarketData = z.infer<typeof insertEsgMarketDataSchema>;
 
 export type EsgTransaction = typeof esgTransactions.$inferSelect;
 export type InsertEsgTransaction = z.infer<typeof insertEsgTransactionSchema>;
+
+// Admin analytics relations
+export const userActivityLogsRelations = relations(userActivityLogs, ({ one }) => ({
+  user: one(users, {
+    fields: [userActivityLogs.userId],
+    references: [users.id]
+  })
+}));
+
+// Update user relations to include admin logs
+export const usersRelationsWithAdminLogs = relations(users, ({ many }) => ({
+  activities: many(activities),
+  userAchievements: many(userAchievements),
+  offsetPurchases: many(offsetPurchases),
+  supplierAssessments: many(supplierAssessments),
+  supplyChainRisks: many(supplyChainRisks),
+  carbonReductionGoals: many(carbonReductionGoals),
+  feedback: many(userFeedback),
+  activityLogs: many(userActivity),
+  adminLogs: many(userActivityLogs)
+}));

@@ -17,7 +17,10 @@ import {
   userRewards, UserReward, InsertUserReward,
   userFeedback, UserFeedback, InsertUserFeedback,
   errorLogs, ErrorLog, InsertErrorLog,
-  userActivity, UserActivityLog, InsertUserActivityLog,
+  userActivity, UserActivity, InsertUserActivity,
+  // Admin dashboard imports
+  userActivityLogs, AdminUserLog, InsertAdminUserLog,
+  systemStats, SystemStat, InsertSystemStat,
   // ESG Trading Platform imports
   esgCompanies, EsgCompany, InsertEsgCompany,
   esgSecurities, EsgSecurity, InsertEsgSecurity,
@@ -201,6 +204,10 @@ export interface IStorage {
 // In-memory implementation of storage
 export class MemStorage implements IStorage {
   public sessionStore: any;
+  private adminLogs: Map<number, AdminUserLog>;
+  private adminLogCurrentId: number;
+  private systemStatsMap: Map<string, SystemStat>;
+  private systemStatCurrentId: number;
   
   private users: Map<number, User>;
   private categories: Map<number, Category>;
