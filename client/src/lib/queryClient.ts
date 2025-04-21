@@ -1,9 +1,46 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { logError } from "./error-logger";
 
-async function throwIfResNotOk(res: Response) {
+// Custom API Error class with additional context
+export class ApiError extends Error {
+  status: number;
+  url: string;
+  method: string;
+
+  constructor(status: number, message: string, url: string, method: string) {
+    super(`${status}: ${message}`);
+    this.name = 'ApiError';
+    this.status = status;
+    this.url = url;
+    this.method = method;
+  }
+}
+
+async function throwIfResNotOk(res: Response, method: string) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    let errorMessage = res.statusText;
+    try {
+      // Try to parse response as JSON for more detailed error
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const errorData = await res.json();
+        errorMessage = errorData.message || errorData.error || errorMessage;
+      } else {
+        // Fallback to text
+        errorMessage = await res.text() || errorMessage;
+      }
+    } catch (e) {
+      // Parsing failed, use status text
+      console.error("Error parsing error response:", e);
+    }
+
+    const apiError = new ApiError(res.status, errorMessage, res.url, method);
+    
+    // Log API errors with severity based on status code
+    const severity = res.status >= 500 ? 'critical' : 'error';
+    logError(apiError, { severity });
+    
+    throw apiError;
   }
 }
 
@@ -12,15 +49,31 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const res = await fetch(url, {
-    method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: data ? { "Content-Type": "application/json" } : {},
+      body: data ? JSON.stringify(data) : undefined,
+      credentials: "include",
+    });
 
-  await throwIfResNotOk(res);
-  return res;
+    await throwIfResNotOk(res, method);
+    return res;
+  } catch (error) {
+    if (error instanceof ApiError) {
+      // ApiError already logged and formatted
+      throw error;
+    }
+    
+    // Handle network errors or other non-response errors
+    const networkError = error as Error;
+    logError(networkError, { 
+      severity: 'critical',
+      context: `API Request: ${method} ${url}`
+    });
+    
+    throw new ApiError(0, networkError.message, url, method);
+  }
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
@@ -29,16 +82,33 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey[0] as string, {
-      credentials: "include",
-    });
+    try {
+      const url = queryKey[0] as string;
+      const res = await fetch(url, {
+        credentials: "include",
+      });
 
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
+      if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+        return null;
+      }
+
+      await throwIfResNotOk(res, 'GET');
+      return await res.json();
+    } catch (error) {
+      if (error instanceof ApiError) {
+        // ApiError already logged and formatted
+        throw error;
+      }
+      
+      // Handle network errors or other non-response errors
+      const networkError = error as Error;
+      logError(networkError, { 
+        severity: 'critical',
+        context: `Query: ${queryKey.join('/')}`
+      });
+      
+      throw new ApiError(0, networkError.message, queryKey[0] as string, 'GET');
     }
-
-    await throwIfResNotOk(res);
-    return await res.json();
   };
 
 export const queryClient = new QueryClient({

@@ -21,6 +21,7 @@ interface ErrorLogPayload {
 export async function logError(error: Error | string, options: {
   severity?: 'warning' | 'error' | 'critical';
   userId?: number;
+  context?: string;
 } = {}): Promise<void> {
   try {
     const errorMessage = typeof error === 'string' ? error : error.message;
@@ -36,14 +37,38 @@ export async function logError(error: Error | string, options: {
       severity: options.severity || 'error'
     };
     
-    await apiRequest('POST', '/api/errors', payload);
+    // Local timestamp for failed server logs
+    const timestamp = new Date().toISOString();
+    
+    try {
+      await apiRequest('POST', '/api/errors', payload);
+    } catch (apiError) {
+      // If server-side logging fails, store in localStorage for later sync
+      const localErrors = JSON.parse(localStorage.getItem('pendingErrorLogs') || '[]');
+      localErrors.push({
+        ...payload,
+        timestamp,
+        context: options.context
+      });
+      
+      // Keep only the last 50 errors to prevent localStorage from getting too large
+      if (localErrors.length > 50) {
+        localErrors.shift(); // Remove oldest error
+      }
+      
+      localStorage.setItem('pendingErrorLogs', JSON.stringify(localErrors));
+      console.warn('Error logged to local storage due to API failure');
+    }
     
     // Also log to console during development
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.error('Error logged:', errorMessage, error);
+      if (options.context) {
+        console.error('Context:', options.context);
+      }
     }
   } catch (loggingError) {
-    // Fallback to console if the server logging fails
+    // Fallback to console if all logging fails
     console.error('Error logging failed:', loggingError);
     console.error('Original error:', error);
   }
