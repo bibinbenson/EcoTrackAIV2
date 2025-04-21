@@ -183,12 +183,12 @@ export default function RewardsPage() {
       {/* User's Rewards */}
       {userRewards?.length > 0 && (
         <div className="mb-8">
-          <h2 className="text-xl font-bold mb-4 flex items-center">
+          <h2 className="text-xl font-bold mb-6 flex items-center">
             <Ticket className="h-5 w-5 mr-2 text-primary" />
             Your Rewards
           </h2>
           
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             {userRewards.map((userReward: any) => {
               const reward = rewards?.find((r: any) => r.id === userReward.rewardId);
               if (!reward) return null;
@@ -201,7 +201,7 @@ export default function RewardsPage() {
                       {userReward.isRedeemed ? (
                         <Badge variant="outline" className="bg-gray-100">Redeemed</Badge>
                       ) : (
-                        <Badge variant="outline" className="bg-green-100 text-green-800">Active</Badge>
+                        <Badge variant="outline" className="bg-green-50 text-green-700">Active</Badge>
                       )}
                     </div>
                     <CardDescription>{reward.partnerName || 'EcoTrack'}</CardDescription>
@@ -268,7 +268,7 @@ export default function RewardsPage() {
 
       {/* Available Rewards */}
       <div>
-        <h2 className="text-xl font-bold mb-4 flex items-center">
+        <h2 className="text-xl font-bold mb-6 flex items-center">
           <ShoppingBag className="h-5 w-5 mr-2 text-primary" />
           Available Rewards
         </h2>
@@ -279,7 +279,7 @@ export default function RewardsPage() {
           </div>
         )}
         
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
           {filteredRewards?.map((reward: any) => {
             const alreadyOwned = hasReward(reward.id);
             const canAfford = (user?.score || 0) >= reward.pointCost;
@@ -430,12 +430,12 @@ export default function RewardsPage() {
           </DialogHeader>
           
           <div className="py-4 bg-green-50 rounded-md p-4 my-4">
-            <p className="text-green-800 font-medium">Your redemption code:</p>
+            <p className="text-green-700 font-medium">Your redemption code:</p>
             <div className="font-mono text-lg font-semibold mt-1 text-center p-2 bg-white rounded-md border border-green-200">
               {/* This is a generated code for display purposes - in real life this would be returned from the API */}
               ECO-{Math.random().toString(36).substring(2, 8).toUpperCase()}
             </div>
-            <p className="text-xs text-green-700 mt-2">
+            <p className="text-xs text-green-600 mt-2">
               You can always access this code from your "Your Rewards" section.
             </p>
           </div>

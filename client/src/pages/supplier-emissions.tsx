@@ -128,14 +128,14 @@ export default function SupplierEmissionsPage() {
 
   const verificationStatusBadge = (status: string) => {
     const statusColors: Record<string, string> = {
-      "third-party-verified": "bg-green-100 text-green-800",
-      "self-verified": "bg-blue-100 text-blue-800",
-      "unverified": "bg-amber-100 text-amber-800",
-      "pending": "bg-gray-100 text-gray-800"
+      "third-party-verified": "bg-green-50 text-green-700",
+      "self-verified": "bg-blue-50 text-blue-700",
+      "unverified": "bg-amber-50 text-amber-700",
+      "pending": "bg-gray-50 text-gray-700"
     };
     
     return (
-      <Badge variant="outline" className={statusColors[status] || "bg-gray-100 text-gray-800"}>
+      <Badge variant="outline" className={statusColors[status] || "bg-gray-50 text-gray-700"}>
         {status}
       </Badge>
     );

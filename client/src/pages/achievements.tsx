@@ -122,7 +122,7 @@ export default function AchievementsPage() {
 
       {/* Achievements tabs */}
       <Tabs defaultValue="all" className="w-full">
-        <TabsList className="mb-4">
+        <TabsList className="mb-6">
           <TabsTrigger value="all">All ({achievements?.length || 0})</TabsTrigger>
           <TabsTrigger value="completed">Completed ({completed.length})</TabsTrigger>
           <TabsTrigger value="in-progress">In Progress ({inProgress.length})</TabsTrigger>
@@ -131,7 +131,7 @@ export default function AchievementsPage() {
 
         <TabsContent value="all" className="mt-0">
           {filterAchievements(achievements)?.length === 0 && (
-            <Alert className="mb-6">
+            <Alert className="mb-8">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>No achievements found</AlertTitle>
               <AlertDescription>
@@ -140,7 +140,7 @@ export default function AchievementsPage() {
             </Alert>
           )}
           
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             {filterAchievements(achievements)?.map((achievement: any) => {
               const userAchievement = userAchievements?.find(
                 (ua: any) => ua.achievementId === achievement.id
@@ -159,7 +159,7 @@ export default function AchievementsPage() {
 
         <TabsContent value="completed" className="mt-0">
           {filterAchievements(completed).length === 0 && (
-            <Alert className="mb-6">
+            <Alert className="mb-8">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>No achievements completed yet</AlertTitle>
               <AlertDescription>
@@ -168,7 +168,7 @@ export default function AchievementsPage() {
             </Alert>
           )}
           
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             {filterAchievements(completed).map((achievement: any) => (
               <AchievementCard
                 key={achievement.id}
@@ -181,7 +181,7 @@ export default function AchievementsPage() {
 
         <TabsContent value="in-progress" className="mt-0">
           {filterAchievements(inProgress).length === 0 && (
-            <Alert className="mb-6">
+            <Alert className="mb-8">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>No achievements in progress</AlertTitle>
               <AlertDescription>
@@ -190,7 +190,7 @@ export default function AchievementsPage() {
             </Alert>
           )}
           
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             {filterAchievements(inProgress).map((achievement: any) => (
               <AchievementCard
                 key={achievement.id}
@@ -203,7 +203,7 @@ export default function AchievementsPage() {
 
         <TabsContent value="locked" className="mt-0">
           {filterAchievements(locked).length === 0 && (
-            <Alert className="mb-6">
+            <Alert className="mb-8">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>No locked achievements</AlertTitle>
               <AlertDescription>
@@ -212,7 +212,7 @@ export default function AchievementsPage() {
             </Alert>
           )}
           
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             {filterAchievements(locked).map((achievement: any) => (
               <AchievementCard
                 key={achievement.id}
