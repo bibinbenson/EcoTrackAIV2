@@ -23,6 +23,7 @@ import Analytics from "@/pages/analytics";
 import ESGTrading from "@/pages/esg-trading";
 import AdvancedCarbonCalculator from "@/pages/advanced-carbon-calculator";
 import AuthPage from "@/pages/auth-page";
+import AdminDashboard from "@/pages/admin-dashboard";
 
 // Supply Chain pages
 import Suppliers from "@/pages/suppliers";
@@ -63,6 +64,9 @@ function Router() {
       {/* Protected Beta-specific Routes */}
       <ProtectedRoute path="/onboarding" component={Onboarding} />
       <ProtectedRoute path="/feedback" component={Feedback} />
+      
+      {/* Admin-only Routes */}
+      <ProtectedRoute path="/admin/dashboard" component={AdminDashboard} />
       
       <Route component={NotFound} />
     </Switch>

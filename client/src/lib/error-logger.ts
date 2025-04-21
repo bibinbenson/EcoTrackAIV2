@@ -1,79 +1,140 @@
 /**
- * Client-side error logging utility
- * This module provides tools for logging client-side errors to the server for tracking
+ * Error Logger Utility
+ * 
+ * This module handles client-side error logging and reporting to the server
  */
 
 import { apiRequest } from "./queryClient";
 
+interface ErrorLogPayload {
+  errorMessage: string;
+  url?: string;
+  userId?: number | null;
+  stackTrace?: string;
+  userAgent?: string;
+  severity?: string;
+}
+
 /**
- * Log a client-side error to the server
- * @param error The error object
- * @param url Optional URL where the error occurred
- * @param severity Error severity (low, medium, high)
- * @returns Promise resolving to the error log ID or undefined if logging failed
+ * Log an error to the server for admin tracking
  */
-export async function logError(
-  error: Error | string,
-  url?: string,
-  severity: 'low' | 'medium' | 'high' = 'medium'
-): Promise<number | undefined> {
+export async function logError(error: Error | string, options: {
+  severity?: 'warning' | 'error' | 'critical';
+  userId?: number;
+} = {}): Promise<void> {
   try {
     const errorMessage = typeof error === 'string' ? error : error.message;
-    const stackTrace = typeof error === 'string' ? null : error.stack || null;
+    const stackTrace = typeof error === 'string' ? undefined : error.stack;
+    const userAgent = navigator.userAgent;
     
-    const response = await apiRequest('POST', '/api/errors', {
+    const payload: ErrorLogPayload = {
       errorMessage,
       stackTrace,
-      url: url || window.location.href,
-      userAgent: navigator.userAgent,
-      severity
-    });
+      userAgent,
+      url: window.location.href,
+      userId: options.userId,
+      severity: options.severity || 'error'
+    };
     
-    const data = await response.json();
-    return data.errorId;
-  } catch (logError) {
-    // Don't throw if logging fails
-    console.error('Failed to log error:', logError);
-    return undefined;
+    await apiRequest('POST', '/api/errors', payload);
+    
+    // Also log to console during development
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error logged:', errorMessage, error);
+    }
+  } catch (loggingError) {
+    // Fallback to console if the server logging fails
+    console.error('Error logging failed:', loggingError);
+    console.error('Original error:', error);
   }
 }
 
 /**
- * Setup global error handler to automatically log unhandled errors
+ * Set up global error logging for unhandled exceptions and promise rejections
  */
 export function setupGlobalErrorLogging(): void {
-  const originalOnError = window.onerror;
-  
-  window.onerror = function(message, source, lineno, colno, error) {
-    // Call original handler if exists
-    if (typeof originalOnError === 'function') {
-      originalOnError.apply(this, arguments as any);
-    }
-    
-    // Log error to server
-    logError(
-      error || String(message),
-      source ? String(source) : undefined,
-      'high'
-    );
-    
-    // Don't prevent default handling
-    return false;
-  };
-
-  // Also handle promise rejections
-  window.addEventListener('unhandledrejection', (event) => {
-    const errorMessage = event.reason?.message || 'Unhandled Promise Rejection';
-    const errorStack = event.reason?.stack || null;
-    
-    apiRequest('POST', '/api/errors', {
-      errorMessage,
-      stackTrace: errorStack,
-      url: window.location.href,
-      userAgent: navigator.userAgent,
-      severity: 'high'
-    }).catch(err => console.error('Failed to log unhandled rejection:', err));
+  // Handle uncaught errors
+  window.addEventListener('error', (event: ErrorEvent) => {
+    logError(event.error || event.message, { severity: 'critical' });
   });
   
+  // Handle unhandled promise rejections
+  window.addEventListener('unhandledrejection', (event: PromiseRejectionEvent) => {
+    const error = event.reason instanceof Error 
+      ? event.reason 
+      : new Error(String(event.reason));
+    
+    logError(error, { severity: 'critical' });
+  });
+  
+  // Log React errors (would be caught by error boundaries)
+  const originalConsoleError = console.error;
+  console.error = (...args) => {
+    // Log to the server with specific React error format
+    if (args[0] && typeof args[0] === 'string' && args[0].indexOf('React') !== -1) {
+      logError(`React Error: ${args.join(' ')}`, { severity: 'error' });
+    }
+    
+    // Keep the original behavior
+    originalConsoleError.apply(console, args);
+  };
+  
   console.info('Global error logging has been set up');
+}
+
+/**
+ * Custom error class for application-specific errors
+ */
+export class AppError extends Error {
+  severity: 'warning' | 'error' | 'critical';
+  
+  constructor(message: string, severity: 'warning' | 'error' | 'critical' = 'error') {
+    super(message);
+    this.name = 'AppError';
+    this.severity = severity;
+    
+    // Log the error immediately when created
+    logError(this, { severity });
+  }
+}
+
+/**
+ * Error boundary component for React
+ * Can be wrapped around components to catch and display errors
+ */
+export function createErrorBoundary(Component: React.ComponentType<any>) {
+  return class ErrorBoundary extends React.Component<any, { hasError: boolean; error: Error | null }> {
+    constructor(props: any) {
+      super(props);
+      this.state = { hasError: false, error: null };
+    }
+
+    static getDerivedStateFromError(error: Error) {
+      return { hasError: true, error };
+    }
+
+    componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+      logError(error, { severity: 'error' });
+      console.error('Component Error:', error, errorInfo);
+    }
+
+    render() {
+      if (this.state.hasError) {
+        return (
+          <div className="p-4 border border-red-300 bg-red-50 rounded-md text-red-800">
+            <h2 className="text-lg font-semibold mb-2">Something went wrong</h2>
+            <p className="mb-2">{this.state.error?.message || 'An unknown error occurred'}</p>
+            <button
+              className="px-3 py-1 bg-red-100 hover:bg-red-200 border border-red-300 rounded-md"
+              onClick={() => this.setState({ hasError: false, error: null })}
+            >
+              Try again
+            </button>
+          </div>
+        );
+      }
+
+      return <Component {...this.props} />;
+    }
+  };
 }
