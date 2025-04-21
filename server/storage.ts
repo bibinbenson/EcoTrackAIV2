@@ -47,6 +47,17 @@ export interface IStorage {
   // Session store
   sessionStore: any;
   
+  // Admin dashboard methods
+  createUserActivityLog(logData: InsertAdminUserLog): Promise<AdminUserLog>;
+  getUserActivityLogs(filter?: {userId?: number, action?: string, startDate?: Date, endDate?: Date}): Promise<AdminUserLog[]>;
+  getSystemStats(): Promise<SystemStat[]>;
+  updateSystemStat(name: string, value: string, category: string): Promise<SystemStat>;
+  getUserSignupStats(period: 'daily' | 'weekly' | 'monthly'): Promise<{date: string, count: number}[]>;
+  getActiveUserStats(period: 'daily' | 'weekly' | 'monthly'): Promise<{date: string, count: number}[]>;
+  getUserCountByAccountType(): Promise<{accountType: string, count: number}[]>;
+  getTotalCarbonReduction(): Promise<number>;
+  getTopPerformingUsers(limit?: number): Promise<User[]>;
+  
   // Achievement tracking operations
   getUserActivityCount(userId: number): Promise<number>;
   getUserActivityCountByCategory(userId: number, categoryId: number): Promise<number>;

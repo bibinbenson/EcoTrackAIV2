@@ -727,17 +727,6 @@ export const insertUserActivitySchema = createInsertSchema(userActivity).omit({
 });
 
 // Update user relations to include goals and feedback
-export const usersRelationsUpdated = relations(users, ({ many }) => ({
-  activities: many(activities),
-  userAchievements: many(userAchievements),
-  offsetPurchases: many(offsetPurchases),
-  supplierAssessments: many(supplierAssessments),
-  supplyChainRisks: many(supplyChainRisks),
-  carbonReductionGoals: many(carbonReductionGoals),
-  feedback: many(userFeedback),
-  activityLogs: many(userActivity)
-}));
-
 // Admin Analytics Models
 export const userActivityLogs = pgTable("user_activity_logs", {
   id: serial("id").primaryKey(),
