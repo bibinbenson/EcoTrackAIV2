@@ -66,7 +66,7 @@ function Router() {
       <ProtectedRoute path="/feedback" component={Feedback} />
       
       {/* Admin-only Routes */}
-      <ProtectedRoute path="/admin/dashboard" component={AdminDashboard} />
+      <ProtectedRoute path="/admin-dashboard" component={AdminDashboard} />
       
       <Route component={NotFound} />
     </Switch>
