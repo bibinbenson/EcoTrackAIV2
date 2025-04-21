@@ -74,6 +74,10 @@ export interface IStorage {
   getUserFeedback(userId: number): Promise<UserFeedback[]>;
   updateUserBetaFeedbackStatus(userId: number, provided: boolean): Promise<User | undefined>;
   updateUserOnboardingStatus(userId: number, completed: boolean): Promise<User | undefined>;
+  
+  // Error tracking operations
+  createErrorLog(errorLog: InsertErrorLog): Promise<ErrorLog>;
+  getErrorLogs(): Promise<ErrorLog[]>;
 
   // Category operations
   getCategory(id: number): Promise<Category | undefined>;
