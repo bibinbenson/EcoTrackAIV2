@@ -1726,24 +1726,39 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserActivityLogs(filter?: {userId?: number, action?: string, startDate?: Date, endDate?: Date}): Promise<AdminUserLog[]> {
-    let query = db.select().from(userActivityLogs);
-    
-    if (filter) {
-      if (filter.userId) {
-        query = query.where(eq(userActivityLogs.userId, filter.userId));
+    try {
+      // Start with a basic query
+      let query = db.select().from(userActivityLogs);
+      
+      // Only apply filters if they have valid values
+      if (filter) {
+        // Apply userId filter if it exists and is a valid number
+        if (filter.userId !== undefined && filter.userId !== null) {
+          query = query.where(eq(userActivityLogs.userId, filter.userId));
+        }
+        
+        // Apply action filter if it exists and is a non-empty string
+        if (filter.action && typeof filter.action === 'string' && filter.action.trim() !== '') {
+          query = query.where(eq(userActivityLogs.action, filter.action));
+        }
+        
+        // Apply date filters if they exist and are valid Date objects
+        if (filter.startDate && filter.startDate instanceof Date) {
+          query = query.where(gte(userActivityLogs.createdAt, filter.startDate));
+        }
+        
+        if (filter.endDate && filter.endDate instanceof Date) {
+          query = query.where(lte(userActivityLogs.createdAt, filter.endDate));
+        }
       }
-      if (filter.action) {
-        query = query.where(eq(userActivityLogs.action, filter.action));
-      }
-      if (filter.startDate) {
-        query = query.where(gte(userActivityLogs.createdAt, filter.startDate));
-      }
-      if (filter.endDate) {
-        query = query.where(lte(userActivityLogs.createdAt, filter.endDate));
-      }
+      
+      // Execute query and return results
+      return await query.orderBy(desc(userActivityLogs.createdAt));
+    } catch (error) {
+      console.error("Error in getUserActivityLogs:", error);
+      // Return empty array instead of throwing to prevent application crashes
+      return [];
     }
-    
-    return query.orderBy(desc(userActivityLogs.createdAt));
   }
   
   async getSystemStats(): Promise<SystemStat[]> {

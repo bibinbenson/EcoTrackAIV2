@@ -945,10 +945,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/feedback", async (_req: Request, res: Response) => {
-    // Get all feedback from current user
-    const userId = 1; // For simplicity, use fixed user
-    const feedback = await storage.getUserFeedback(userId);
-    return res.json(feedback);
+    try {
+      // Get all feedback (no filtering)
+      const filter = { userId: undefined };
+      const feedback = await storage.getUserFeedback(filter);
+      return res.json(feedback);
+    } catch (error) {
+      console.error("Error fetching feedback:", error);
+      return res.status(500).json({
+        status: "error",
+        message: "Failed to fetch feedback"
+      });
+    }
   });
 
   // Error logging API for client-side errors
