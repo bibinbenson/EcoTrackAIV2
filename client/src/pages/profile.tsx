@@ -31,10 +31,8 @@ import {
   Lock,
   Bell,
   Trash2,
-  CheckCircle,
   LogOut,
-  Save,
-  X
+  Save
 } from "lucide-react";
 import { 
   Dialog,
@@ -42,8 +40,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+  DialogTitle
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -669,443 +666,443 @@ export default function Profile() {
                   <TabsTrigger value="achievements">Achievements</TabsTrigger>
                   <TabsTrigger value="settings">Settings</TabsTrigger>
                 </TabsList>
+                
+                <CardContent className="pt-6">
+                  <TabsContent value="overview" className="space-y-6">
+                    <div>
+                      <h3 className="text-lg font-bold text-neutral-800 mb-4">Carbon Footprint Summary</h3>
+                      
+                      <div className="bg-neutral-50 p-4 rounded-lg">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="text-center">
+                            <p className="text-sm text-neutral-600">Current Month</p>
+                            <p className="text-2xl font-bold text-primary">42 kg CO₂</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-sm text-neutral-600">Previous Month</p>
+                            <p className="text-2xl font-bold text-neutral-800">65 kg CO₂</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-sm text-neutral-600">Monthly Trend</p>
+                            <p className="text-2xl font-bold text-green-600">-35%</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h3 className="text-lg font-bold text-neutral-800 mb-4">Recent Activity</h3>
+                      
+                      {isLoadingActivities ? (
+                        <div className="space-y-3">
+                          {[1, 2, 3].map((i) => (
+                            <div key={i} className="p-3 border border-neutral-200 rounded-lg animate-pulse">
+                              <div className="flex justify-between items-start">
+                                <div className="flex items-center">
+                                  <div className="h-10 w-10 bg-neutral-200 rounded-full"></div>
+                                  <div className="ml-3">
+                                    <div className="h-4 w-32 bg-neutral-200 rounded mb-2"></div>
+                                    <div className="h-3 w-24 bg-neutral-200 rounded"></div>
+                                  </div>
+                                </div>
+                                <div className="h-6 w-16 bg-neutral-200 rounded"></div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : !activities || activities.length === 0 ? (
+                        <div className="text-center py-8 text-neutral-500">
+                          <p>No activities logged yet. Use the calculator to log your first activity!</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {activities.slice(0, 3).map((activity: any) => (
+                            <div key={activity.id} className="p-3 border border-neutral-200 rounded-lg">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <h4 className="font-medium text-neutral-800">{activity.description}</h4>
+                                  <p className="text-sm text-neutral-600">{formatDate(activity.date)}</p>
+                                </div>
+                                <Badge variant="outline" className="font-mono">
+                                  {activity.carbonAmount.toFixed(2)} kg
+                                </Badge>
+                              </div>
+                            </div>
+                          ))}
+                          
+                          {activities.length > 3 && (
+                            <Button 
+                              variant="ghost" 
+                              className="w-full text-primary"
+                              onClick={() => setActiveTab("activities")}
+                            >
+                              View All Activities
+                              <ChevronRight className="ml-1 h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="activities" className="space-y-4">
+                    <h3 className="text-lg font-bold text-neutral-800 mb-4">All Activities</h3>
+                    
+                    {isLoadingActivities ? (
+                      <div className="space-y-3">
+                        {[...Array(5)].map((_, i) => (
+                          <div key={i} className="p-3 border border-neutral-200 rounded-lg animate-pulse">
+                            <div className="flex justify-between items-start">
+                              <div className="flex items-center">
+                                <div className="h-10 w-10 bg-neutral-200 rounded-full"></div>
+                                <div className="ml-3">
+                                  <div className="h-4 w-32 bg-neutral-200 rounded mb-2"></div>
+                                  <div className="h-3 w-24 bg-neutral-200 rounded"></div>
+                                </div>
+                              </div>
+                              <div className="h-6 w-16 bg-neutral-200 rounded"></div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : !activities || activities.length === 0 ? (
+                      <div className="text-center py-12 bg-neutral-50 rounded-lg">
+                        <UserIcon className="mx-auto h-12 w-12 text-neutral-400" />
+                        <h3 className="mt-2 text-lg font-medium text-neutral-800">No Activities Yet</h3>
+                        <p className="mt-1 text-neutral-600">
+                          Start tracking your carbon footprint by logging activities
+                        </p>
+                        <Button className="mt-4">Log First Activity</Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {activities.map((activity: any) => (
+                          <div key={activity.id} className="p-3 border border-neutral-200 rounded-lg">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <h4 className="font-medium text-neutral-800">{activity.description}</h4>
+                                <p className="text-sm text-neutral-600">{formatDate(activity.date)}</p>
+                              </div>
+                              <Badge variant="outline" className="font-mono">
+                                {activity.carbonAmount.toFixed(2)} kg
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </TabsContent>
+                  
+                  <TabsContent value="achievements" className="space-y-4">
+                    <h3 className="text-lg font-bold text-neutral-800 mb-4">All Achievements</h3>
+                    
+                    {isLoadingAchievements ? (
+                      <div className="space-y-3">
+                        {[...Array(5)].map((_, i) => (
+                          <div key={i} className="p-4 border border-neutral-200 rounded-lg animate-pulse">
+                            <div className="flex items-center">
+                              <div className="h-12 w-12 bg-neutral-200 rounded-full"></div>
+                              <div className="ml-3 flex-1">
+                                <div className="h-4 w-32 bg-neutral-200 rounded mb-2"></div>
+                                <div className="h-3 w-full bg-neutral-200 rounded"></div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : !achievements || achievements.length === 0 ? (
+                      <div className="text-center py-12 bg-neutral-50 rounded-lg">
+                        <Award className="mx-auto h-12 w-12 text-neutral-400" />
+                        <h3 className="mt-2 text-lg font-medium text-neutral-800">No Achievements Yet</h3>
+                        <p className="mt-1 text-neutral-600">
+                          Continue using the app to earn achievements
+                        </p>
+                        <Button className="mt-4">View Available Achievements</Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 gap-4">
+                          <h4 className="font-medium text-neutral-800">Completed</h4>
+                          
+                          {achievements.filter((a: any) => a.isCompleted).length === 0 ? (
+                            <p className="text-sm text-neutral-600">No completed achievements yet</p>
+                          ) : (
+                            <div className="space-y-3">
+                              {achievements
+                                .filter((a: any) => a.isCompleted)
+                                .map((achievement: any) => (
+                                  <div key={achievement.id} className="p-4 border border-neutral-200 rounded-lg">
+                                    <div className="flex items-center">
+                                      <div className="h-12 w-12 flex-shrink-0 flex items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                                        <Award className="h-6 w-6" />
+                                      </div>
+                                      <div className="ml-3">
+                                        <h4 className="font-medium text-neutral-800">
+                                          {achievement.name}
+                                        </h4>
+                                        <p className="text-sm text-neutral-600">
+                                          {achievement.description}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="grid grid-cols-1 gap-4">
+                          <h4 className="font-medium text-neutral-800">In Progress</h4>
+                          
+                          {achievements.filter((a: any) => !a.isCompleted).length === 0 ? (
+                            <p className="text-sm text-neutral-600">No achievements in progress</p>
+                          ) : (
+                            <div className="space-y-3">
+                              {achievements
+                                .filter((a: any) => !a.isCompleted)
+                                .map((achievement: any) => (
+                                  <div key={achievement.id} className="p-4 border border-neutral-200 rounded-lg">
+                                    <div className="flex items-center">
+                                      <div className="h-12 w-12 flex-shrink-0 flex items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                                        <Award className="h-6 w-6" />
+                                      </div>
+                                      <div className="ml-3">
+                                        <h4 className="font-medium text-neutral-800">
+                                          {achievement.name}
+                                        </h4>
+                                        <p className="text-sm text-neutral-600">
+                                          {achievement.description}
+                                        </p>
+                                        <div className="mt-2 bg-neutral-100 rounded-full h-2 overflow-hidden">
+                                          <div 
+                                            className="bg-blue-600 h-full rounded-full" 
+                                            style={{ width: `${(achievement.progress / achievement.target) * 100}%` }}
+                                          ></div>
+                                        </div>
+                                        <p className="text-xs text-neutral-500 mt-1">
+                                          {achievement.progress} / {achievement.target}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </TabsContent>
+                  
+                  <TabsContent value="settings" className="space-y-6">
+                    <div>
+                      <h3 className="text-lg font-bold text-neutral-800 mb-4">Account Settings</h3>
+                      
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <Card>
+                            <CardHeader className="pb-2">
+                              <div className="flex items-center">
+                                <UserIcon className="h-5 w-5 mr-2 text-primary" />
+                                <CardTitle className="text-md">Personal Information</CardTitle>
+                              </div>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="space-y-2">
+                                <div className="flex justify-between items-center">
+                                  <p className="text-sm text-neutral-600">Name</p>
+                                  <p className="font-medium text-neutral-800">{user?.firstName} {user?.lastName}</p>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <p className="text-sm text-neutral-600">Username</p>
+                                  <p className="font-medium text-neutral-800">@{user?.username}</p>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <p className="text-sm text-neutral-600">Email</p>
+                                  <p className="font-medium text-neutral-800">{user?.email}</p>
+                                </div>
+                              </div>
+                            </CardContent>
+                            <CardFooter>
+                              <Button 
+                                variant="outline" 
+                                className="w-full"
+                                onClick={() => setIsEditProfileOpen(true)}
+                              >
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit Profile
+                              </Button>
+                            </CardFooter>
+                          </Card>
+                          
+                          <Card>
+                            <CardHeader className="pb-2">
+                              <div className="flex items-center">
+                                <Lock className="h-5 w-5 mr-2 text-primary" />
+                                <CardTitle className="text-md">Security</CardTitle>
+                              </div>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="space-y-2">
+                                <div className="flex justify-between items-center">
+                                  <p className="text-sm text-neutral-600">Password</p>
+                                  <p className="font-medium text-neutral-800">••••••••</p>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <p className="text-sm text-neutral-600">Last updated</p>
+                                  <p className="font-medium text-neutral-800">30 days ago</p>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <p className="text-sm text-neutral-600">Two-factor</p>
+                                  <Badge variant="outline" className="bg-red-50 text-red-700 hover:bg-red-50">Disabled</Badge>
+                                </div>
+                              </div>
+                            </CardContent>
+                            <CardFooter>
+                              <Button 
+                                variant="outline" 
+                                className="w-full"
+                                onClick={() => setIsChangePasswordOpen(true)}
+                              >
+                                <Lock className="mr-2 h-4 w-4" />
+                                Change Password
+                              </Button>
+                            </CardFooter>
+                          </Card>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 gap-4">
+                          <Card>
+                            <CardHeader className="pb-2">
+                              <div className="flex items-center">
+                                <Bell className="h-5 w-5 mr-2 text-primary" />
+                                <CardTitle className="text-md">Notifications</CardTitle>
+                              </div>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <p className="font-medium text-neutral-800">Email Notifications</p>
+                                    <p className="text-sm text-neutral-600">Receive updates via email</p>
+                                  </div>
+                                  <Switch defaultChecked id="email-notifications" />
+                                </div>
+                                
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <p className="font-medium text-neutral-800">Achievement Alerts</p>
+                                    <p className="text-sm text-neutral-600">Get notified when you earn achievements</p>
+                                  </div>
+                                  <Switch defaultChecked id="achievement-alerts" />
+                                </div>
+                                
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <p className="font-medium text-neutral-800">Weekly Reports</p>
+                                    <p className="text-sm text-neutral-600">Receive weekly carbon footprint summary</p>
+                                  </div>
+                                  <Switch defaultChecked id="weekly-reports" />
+                                </div>
+                                
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <p className="font-medium text-neutral-800">Marketing Communications</p>
+                                    <p className="text-sm text-neutral-600">Receive news and promotional offers</p>
+                                  </div>
+                                  <Switch id="marketing-comms" />
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 gap-4">
+                          <Card>
+                            <CardHeader className="pb-2">
+                              <div className="flex items-center">
+                                <Shield className="h-5 w-5 mr-2 text-primary" />
+                                <CardTitle className="text-md">Privacy & Data</CardTitle>
+                              </div>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <p className="font-medium text-neutral-800">Public Profile</p>
+                                    <p className="text-sm text-neutral-600">Allow others to view your profile</p>
+                                  </div>
+                                  <Switch defaultChecked id="public-profile" />
+                                </div>
+                                
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <p className="font-medium text-neutral-800">Show Achievements</p>
+                                    <p className="text-sm text-neutral-600">Display achievements on public profile</p>
+                                  </div>
+                                  <Switch defaultChecked id="show-achievements" />
+                                </div>
+                                
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <p className="font-medium text-neutral-800">Data Collection</p>
+                                    <p className="text-sm text-neutral-600">Allow anonymous data collection for improvements</p>
+                                  </div>
+                                  <Switch defaultChecked id="data-collection" />
+                                </div>
+                              </div>
+                            </CardContent>
+                            <CardFooter className="flex flex-col space-y-2">
+                              <Button variant="outline" className="w-full">
+                                <Download className="mr-2 h-4 w-4" />
+                                Download My Data
+                              </Button>
+                              <Button variant="outline" className="w-full text-destructive border-destructive/30 hover:bg-destructive/10">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete Account
+                              </Button>
+                            </CardFooter>
+                          </Card>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 gap-4">
+                          <Card>
+                            <CardHeader className="pb-2">
+                              <div className="flex items-center">
+                                <LogOut className="h-5 w-5 mr-2 text-primary" />
+                                <CardTitle className="text-md">Account Actions</CardTitle>
+                              </div>
+                            </CardHeader>
+                            <CardContent>
+                              <p className="text-sm text-neutral-600 mb-4">
+                                When you log out, your session will be cleared from this device. You'll need to log in again to access your account.
+                              </p>
+                              <Button 
+                                variant="destructive" 
+                                className="w-full"
+                                onClick={handleLogout}
+                                disabled={logoutMutation.isPending}
+                              >
+                                {logoutMutation.isPending ? (
+                                  <>
+                                    <span className="mr-2 h-4 w-4 animate-spin">●</span>
+                                    <span>Logging out...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <LogOut className="mr-2 h-4 w-4" />
+                                    <span>Log out</span>
+                                  </>
+                                )}
+                              </Button>
+                            </CardContent>
+                          </Card>
+                        </div>
+                      </div>
+                    </div>
+                  </TabsContent>
+                </CardContent>
               </Tabs>
             </CardHeader>
-            
-            <CardContent className="pt-6">
-              <TabsContent value="overview" className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-bold text-neutral-800 mb-4">Carbon Footprint Summary</h3>
-                  
-                  <div className="bg-neutral-50 p-4 rounded-lg">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="text-center">
-                        <p className="text-sm text-neutral-600">Current Month</p>
-                        <p className="text-2xl font-bold text-primary">42 kg CO₂</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-sm text-neutral-600">Previous Month</p>
-                        <p className="text-2xl font-bold text-neutral-800">65 kg CO₂</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-sm text-neutral-600">Monthly Trend</p>
-                        <p className="text-2xl font-bold text-green-600">-35%</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-lg font-bold text-neutral-800 mb-4">Recent Activity</h3>
-                  
-                  {isLoadingActivities ? (
-                    <div className="space-y-3">
-                      {[1, 2, 3].map((i) => (
-                        <div key={i} className="p-3 border border-neutral-200 rounded-lg animate-pulse">
-                          <div className="flex justify-between items-start">
-                            <div className="flex items-center">
-                              <div className="h-10 w-10 bg-neutral-200 rounded-full"></div>
-                              <div className="ml-3">
-                                <div className="h-4 w-32 bg-neutral-200 rounded mb-2"></div>
-                                <div className="h-3 w-24 bg-neutral-200 rounded"></div>
-                              </div>
-                            </div>
-                            <div className="h-6 w-16 bg-neutral-200 rounded"></div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : !activities || activities.length === 0 ? (
-                    <div className="text-center py-8 text-neutral-500">
-                      <p>No activities logged yet. Use the calculator to log your first activity!</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {activities.slice(0, 3).map((activity: any) => (
-                        <div key={activity.id} className="p-3 border border-neutral-200 rounded-lg">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h4 className="font-medium text-neutral-800">{activity.description}</h4>
-                              <p className="text-sm text-neutral-600">{formatDate(activity.date)}</p>
-                            </div>
-                            <Badge variant="outline" className="font-mono">
-                              {activity.carbonAmount.toFixed(2)} kg
-                            </Badge>
-                          </div>
-                        </div>
-                      ))}
-                      
-                      {activities.length > 3 && (
-                        <Button 
-                          variant="ghost" 
-                          className="w-full text-primary"
-                          onClick={() => setActiveTab("activities")}
-                        >
-                          View All Activities
-                          <ChevronRight className="ml-1 h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="activities" className="space-y-4">
-                <h3 className="text-lg font-bold text-neutral-800 mb-4">All Activities</h3>
-                
-                {isLoadingActivities ? (
-                  <div className="space-y-3">
-                    {[...Array(5)].map((_, i) => (
-                      <div key={i} className="p-3 border border-neutral-200 rounded-lg animate-pulse">
-                        <div className="flex justify-between items-start">
-                          <div className="flex items-center">
-                            <div className="h-10 w-10 bg-neutral-200 rounded-full"></div>
-                            <div className="ml-3">
-                              <div className="h-4 w-32 bg-neutral-200 rounded mb-2"></div>
-                              <div className="h-3 w-24 bg-neutral-200 rounded"></div>
-                            </div>
-                          </div>
-                          <div className="h-6 w-16 bg-neutral-200 rounded"></div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : !activities || activities.length === 0 ? (
-                  <div className="text-center py-12 bg-neutral-50 rounded-lg">
-                    <UserIcon className="mx-auto h-12 w-12 text-neutral-400" />
-                    <h3 className="mt-2 text-lg font-medium text-neutral-800">No Activities Yet</h3>
-                    <p className="mt-1 text-neutral-600">
-                      Start tracking your carbon footprint by logging activities
-                    </p>
-                    <Button className="mt-4">Log First Activity</Button>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {activities.map((activity: any) => (
-                      <div key={activity.id} className="p-3 border border-neutral-200 rounded-lg">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h4 className="font-medium text-neutral-800">{activity.description}</h4>
-                            <p className="text-sm text-neutral-600">{formatDate(activity.date)}</p>
-                          </div>
-                          <Badge variant="outline" className="font-mono">
-                            {activity.carbonAmount.toFixed(2)} kg
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-              
-              <TabsContent value="achievements" className="space-y-4">
-                <h3 className="text-lg font-bold text-neutral-800 mb-4">All Achievements</h3>
-                
-                {isLoadingAchievements ? (
-                  <div className="space-y-3">
-                    {[...Array(5)].map((_, i) => (
-                      <div key={i} className="p-4 border border-neutral-200 rounded-lg animate-pulse">
-                        <div className="flex items-center">
-                          <div className="h-12 w-12 bg-neutral-200 rounded-full"></div>
-                          <div className="ml-3 flex-1">
-                            <div className="h-4 w-32 bg-neutral-200 rounded mb-2"></div>
-                            <div className="h-3 w-full bg-neutral-200 rounded"></div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : !achievements || achievements.length === 0 ? (
-                  <div className="text-center py-12 bg-neutral-50 rounded-lg">
-                    <Award className="mx-auto h-12 w-12 text-neutral-400" />
-                    <h3 className="mt-2 text-lg font-medium text-neutral-800">No Achievements Yet</h3>
-                    <p className="mt-1 text-neutral-600">
-                      Continue using the app to earn achievements
-                    </p>
-                    <Button className="mt-4">View Available Achievements</Button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 gap-4">
-                      <h4 className="font-medium text-neutral-800">Completed</h4>
-                      
-                      {achievements.filter((a: any) => a.isCompleted).length === 0 ? (
-                        <p className="text-sm text-neutral-600">No completed achievements yet</p>
-                      ) : (
-                        <div className="space-y-3">
-                          {achievements
-                            .filter((a: any) => a.isCompleted)
-                            .map((achievement: any) => (
-                              <div key={achievement.id} className="p-4 border border-neutral-200 rounded-lg">
-                                <div className="flex items-center">
-                                  <div className="h-12 w-12 flex-shrink-0 flex items-center justify-center rounded-full bg-amber-100 text-amber-600">
-                                    <Award className="h-6 w-6" />
-                                  </div>
-                                  <div className="ml-3">
-                                    <h4 className="font-medium text-neutral-800">
-                                      {achievement.name}
-                                    </h4>
-                                    <p className="text-sm text-neutral-600">
-                                      {achievement.description}
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="grid grid-cols-1 gap-4">
-                      <h4 className="font-medium text-neutral-800">In Progress</h4>
-                      
-                      {achievements.filter((a: any) => !a.isCompleted).length === 0 ? (
-                        <p className="text-sm text-neutral-600">No achievements in progress</p>
-                      ) : (
-                        <div className="space-y-3">
-                          {achievements
-                            .filter((a: any) => !a.isCompleted)
-                            .map((achievement: any) => (
-                              <div key={achievement.id} className="p-4 border border-neutral-200 rounded-lg">
-                                <div className="flex items-center">
-                                  <div className="h-12 w-12 flex-shrink-0 flex items-center justify-center rounded-full bg-blue-100 text-blue-600">
-                                    <Award className="h-6 w-6" />
-                                  </div>
-                                  <div className="ml-3">
-                                    <h4 className="font-medium text-neutral-800">
-                                      {achievement.name}
-                                    </h4>
-                                    <p className="text-sm text-neutral-600">
-                                      {achievement.description}
-                                    </p>
-                                    <div className="mt-2 bg-neutral-100 rounded-full h-2 overflow-hidden">
-                                      <div 
-                                        className="bg-blue-600 h-full rounded-full" 
-                                        style={{ width: `${(achievement.progress / achievement.target) * 100}%` }}
-                                      ></div>
-                                    </div>
-                                    <p className="text-xs text-neutral-500 mt-1">
-                                      {achievement.progress} / {achievement.target}
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </TabsContent>
-              
-              <TabsContent value="settings" className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-bold text-neutral-800 mb-4">Account Settings</h3>
-                  
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <div className="flex items-center">
-                            <UserIcon className="h-5 w-5 mr-2 text-primary" />
-                            <CardTitle className="text-md">Personal Information</CardTitle>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                              <p className="text-sm text-neutral-600">Name</p>
-                              <p className="font-medium text-neutral-800">{user?.firstName} {user?.lastName}</p>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <p className="text-sm text-neutral-600">Username</p>
-                              <p className="font-medium text-neutral-800">@{user?.username}</p>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <p className="text-sm text-neutral-600">Email</p>
-                              <p className="font-medium text-neutral-800">{user?.email}</p>
-                            </div>
-                          </div>
-                        </CardContent>
-                        <CardFooter>
-                          <Button 
-                            variant="outline" 
-                            className="w-full"
-                            onClick={() => setIsEditProfileOpen(true)}
-                          >
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit Profile
-                          </Button>
-                        </CardFooter>
-                      </Card>
-                      
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <div className="flex items-center">
-                            <Lock className="h-5 w-5 mr-2 text-primary" />
-                            <CardTitle className="text-md">Security</CardTitle>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                              <p className="text-sm text-neutral-600">Password</p>
-                              <p className="font-medium text-neutral-800">••••••••</p>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <p className="text-sm text-neutral-600">Last updated</p>
-                              <p className="font-medium text-neutral-800">30 days ago</p>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <p className="text-sm text-neutral-600">Two-factor</p>
-                              <Badge variant="outline" className="bg-red-50 text-red-700 hover:bg-red-50">Disabled</Badge>
-                            </div>
-                          </div>
-                        </CardContent>
-                        <CardFooter>
-                          <Button 
-                            variant="outline" 
-                            className="w-full"
-                            onClick={() => setIsChangePasswordOpen(true)}
-                          >
-                            <Lock className="mr-2 h-4 w-4" />
-                            Change Password
-                          </Button>
-                        </CardFooter>
-                      </Card>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 gap-4">
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <div className="flex items-center">
-                            <Bell className="h-5 w-5 mr-2 text-primary" />
-                            <CardTitle className="text-md">Notifications</CardTitle>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="font-medium text-neutral-800">Email Notifications</p>
-                                <p className="text-sm text-neutral-600">Receive updates via email</p>
-                              </div>
-                              <Switch defaultChecked id="email-notifications" />
-                            </div>
-                            
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="font-medium text-neutral-800">Achievement Alerts</p>
-                                <p className="text-sm text-neutral-600">Get notified when you earn achievements</p>
-                              </div>
-                              <Switch defaultChecked id="achievement-alerts" />
-                            </div>
-                            
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="font-medium text-neutral-800">Weekly Reports</p>
-                                <p className="text-sm text-neutral-600">Receive weekly carbon footprint summary</p>
-                              </div>
-                              <Switch defaultChecked id="weekly-reports" />
-                            </div>
-                            
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="font-medium text-neutral-800">Marketing Communications</p>
-                                <p className="text-sm text-neutral-600">Receive news and promotional offers</p>
-                              </div>
-                              <Switch id="marketing-comms" />
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 gap-4">
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <div className="flex items-center">
-                            <Shield className="h-5 w-5 mr-2 text-primary" />
-                            <CardTitle className="text-md">Privacy & Data</CardTitle>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="font-medium text-neutral-800">Public Profile</p>
-                                <p className="text-sm text-neutral-600">Allow others to view your profile</p>
-                              </div>
-                              <Switch defaultChecked id="public-profile" />
-                            </div>
-                            
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="font-medium text-neutral-800">Show Achievements</p>
-                                <p className="text-sm text-neutral-600">Display achievements on public profile</p>
-                              </div>
-                              <Switch defaultChecked id="show-achievements" />
-                            </div>
-                            
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="font-medium text-neutral-800">Data Collection</p>
-                                <p className="text-sm text-neutral-600">Allow anonymous data collection for improvements</p>
-                              </div>
-                              <Switch defaultChecked id="data-collection" />
-                            </div>
-                          </div>
-                        </CardContent>
-                        <CardFooter className="flex flex-col space-y-2">
-                          <Button variant="outline" className="w-full">
-                            <Download className="mr-2 h-4 w-4" />
-                            Download My Data
-                          </Button>
-                          <Button variant="outline" className="w-full text-destructive border-destructive/30 hover:bg-destructive/10">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete Account
-                          </Button>
-                        </CardFooter>
-                      </Card>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 gap-4">
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <div className="flex items-center">
-                            <LogOut className="h-5 w-5 mr-2 text-primary" />
-                            <CardTitle className="text-md">Account Actions</CardTitle>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-sm text-neutral-600 mb-4">
-                            When you log out, your session will be cleared from this device. You'll need to log in again to access your account.
-                          </p>
-                          <Button 
-                            variant="destructive" 
-                            className="w-full"
-                            onClick={handleLogout}
-                            disabled={logoutMutation.isPending}
-                          >
-                            {logoutMutation.isPending ? (
-                              <>
-                                <span className="mr-2 h-4 w-4 animate-spin">●</span>
-                                <span>Logging out...</span>
-                              </>
-                            ) : (
-                              <>
-                                <LogOut className="mr-2 h-4 w-4" />
-                                <span>Log out</span>
-                              </>
-                            )}
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
-            </CardContent>
           </Card>
         </div>
       </div>
