@@ -17,8 +17,19 @@ import {
   Truck,
   BarChart2,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  LogOut,
+  User
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/hooks/use-auth";
 
 // Define all navigation items with icons
 const navItems = [
@@ -46,10 +57,16 @@ interface HeaderProps {
 }
 
 export default function Header({ currentPath }: HeaderProps) {
+  const { user, logoutMutation } = useAuth();
   const [mobileSupplyChainOpen, setMobileSupplyChainOpen] = useState(false);
   const [navScrollPosition, setNavScrollPosition] = useState(0);
   const navScrollRef = useRef<HTMLDivElement>(null);
   const isSupplyChainActive = supplyChainItems.some(item => currentPath === item.href);
+  
+  // Handle logout
+  const handleLogout = () => {
+    logoutMutation.mutate();
+  };
 
   // Calculate if we can scroll left or right
   const canScrollLeft = navScrollPosition > 0;
@@ -195,15 +212,50 @@ export default function Header({ currentPath }: HeaderProps) {
               Log Activity
             </Button>
           </Link>
-          <Link href="/profile">
-            <div className="h-8 w-8 rounded-full overflow-hidden cursor-pointer border-2 border-primary/10">
-              <img
-                className="h-full w-full object-cover"
-                src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                alt="Profile"
-              />
-            </div>
-          </Link>
+          
+          {/* User Profile Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <div className="h-8 w-8 rounded-full overflow-hidden cursor-pointer border-2 border-primary/10">
+                <img
+                  className="h-full w-full object-cover"
+                  src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+                  alt="Profile"
+                />
+              </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>
+                {user?.firstName ? 
+                  `${user.firstName} ${user.lastName}` : 
+                  user?.username || 'My Account'}
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <Link href="/profile">
+                <DropdownMenuItem className="cursor-pointer">
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Profile</span>
+                </DropdownMenuItem>
+              </Link>
+              <DropdownMenuItem 
+                className="cursor-pointer text-destructive focus:text-destructive" 
+                onClick={handleLogout}
+                disabled={logoutMutation.isPending}
+              >
+                {logoutMutation.isPending ? (
+                  <>
+                    <span className="mr-2 h-4 w-4 animate-spin">●</span>
+                    <span>Logging out...</span>
+                  </>
+                ) : (
+                  <>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                  </>
+                )}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* Mobile menu button */}
           <Sheet>
@@ -294,13 +346,32 @@ export default function Header({ currentPath }: HeaderProps) {
                   </div>
                 </div>
                 
-                {/* Bottom Section with Log Activity button */}
-                <div className="mt-auto p-4 border-t border-neutral-200">
+                {/* Bottom Section with Log Activity button and Logout */}
+                <div className="mt-auto p-4 border-t border-neutral-200 space-y-2">
                   <Link href="/calculator">
                     <Button variant="default" className="w-full">
                       Log Activity
                     </Button>
                   </Link>
+                  
+                  <Button 
+                    variant="outline" 
+                    className="w-full text-destructive border-destructive/30 hover:bg-destructive/10"
+                    onClick={handleLogout}
+                    disabled={logoutMutation.isPending}
+                  >
+                    {logoutMutation.isPending ? (
+                      <>
+                        <span className="mr-2 h-4 w-4 animate-spin">●</span>
+                        <span>Logging out...</span>
+                      </>
+                    ) : (
+                      <>
+                        <LogOut className="mr-2 h-4 w-4" />
+                        <span>Log out</span>
+                      </>
+                    )}
+                  </Button>
                 </div>
               </div>
             </SheetContent>
