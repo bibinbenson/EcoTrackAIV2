@@ -237,6 +237,14 @@ export default function Header({ currentPath }: HeaderProps) {
                   <span>Profile</span>
                 </DropdownMenuItem>
               </Link>
+              {user?.accountType === "admin" && (
+                <Link href="/admin-dashboard">
+                  <DropdownMenuItem className="cursor-pointer">
+                    <BarChart2 className="mr-2 h-4 w-4" />
+                    <span>Admin Dashboard</span>
+                  </DropdownMenuItem>
+                </Link>
+              )}
               <DropdownMenuItem 
                 className="cursor-pointer text-destructive focus:text-destructive" 
                 onClick={handleLogout}
