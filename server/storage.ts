@@ -243,7 +243,7 @@ export class MemStorage implements IStorage {
   private userRewards: Map<number, UserReward>;
   private userFeedback: Map<number, UserFeedback>;
   private errorLogs: Map<number, ErrorLog>;
-  private userActivityLogs: Map<number, UserActivityLog>;
+  private userActivityLogs: Map<number, UserActivity>;
   
   private userCurrentId: number;
   private categoryCurrentId: number;
@@ -2630,8 +2630,8 @@ interface DatabaseStorage {
   getErrorLogs(): Promise<ErrorLog[]>;
   
   // User analytics operations
-  createUserActivityLog(activityLog: InsertUserActivityLog): Promise<UserActivityLog>;
-  getUserActivityLogs(userId: number): Promise<UserActivityLog[]>;
+  createUserActivity(activityLog: InsertUserActivity): Promise<UserActivity>;
+  getUserActivity(userId: number): Promise<UserActivity[]>;
 }
 
 // Import the database achievement tracking methods
@@ -2753,9 +2753,9 @@ DatabaseStorage.prototype.getErrorLogs = async function(): Promise<ErrorLog[]> {
 };
 
 // User analytics operations
-DatabaseStorage.prototype.createUserActivityLog = async function(
-  activityLog: InsertUserActivityLog
-): Promise<UserActivityLog> {
+DatabaseStorage.prototype.createUserActivity = async function(
+  activityLog: InsertUserActivity
+): Promise<UserActivity> {
   const [newLog] = await db
     .insert(userActivity)
     .values({
@@ -2766,9 +2766,9 @@ DatabaseStorage.prototype.createUserActivityLog = async function(
   return newLog;
 };
 
-DatabaseStorage.prototype.getUserActivityLogs = async function(
+DatabaseStorage.prototype.getUserActivity = async function(
   userId: number
-): Promise<UserActivityLog[]> {
+): Promise<UserActivity[]> {
   return db
     .select()
     .from(userActivity)

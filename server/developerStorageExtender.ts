@@ -1,7 +1,7 @@
-import { DatabaseStorage } from './storage';
+import { DatabaseStorage, MemStorage } from './storage';
 import * as developerPortal from './developerPortal';
 
-// This file extends the DatabaseStorage prototype with developer portal methods
+// This file extends the storage classes with developer portal methods
 
 // Add all the developer portal methods to the DatabaseStorage prototype
 export function extendDatabaseStorage() {
@@ -22,37 +22,79 @@ export function extendDatabaseStorage() {
   DatabaseStorage.prototype.getApiMetrics = developerPortal.getApiMetrics;
   DatabaseStorage.prototype.getDeveloperAnalytics = developerPortal.getDeveloperAnalytics;
   
-  console.log('Developer portal storage methods have been added to DatabaseStorage');
-  
-  // Define memory storage fallbacks
-  const memoryFallbacks = {
-    resolveErrorLog: async function(errorId: number, resolution: string) {
-      console.log(`[MemStorage] Mock resolving error ${errorId} with: ${resolution}`);
-      return { id: errorId, resolved: true, resolutionNotes: resolution, resolvedAt: new Date() };
-    },
+  // Add methods to MemStorage prototype too
+  MemStorage.prototype.resolveErrorLog = async function(errorId: number, resolution: string) {
+    const errorLog = this.errorLogs.get(errorId);
+    if (!errorLog) return undefined;
     
-    getRecentErrorCount: async function(hours: number) {
-      console.log(`[MemStorage] Mock getting error count for last ${hours} hours`);
-      return { totalCount: 12, criticalCount: 3 };
-    },
-    
-    getDatabaseConnectionStats: async function() {
-      return { total: 10, active: 3, idle: 7, waitingToConnect: 0 };
-    },
-    
-    getAverageApiResponseTime: async function() {
-      return 120;
-    },
-    
-    getAverageDatabaseQueryTime: async function() {
-      return 35;
-    },
-    
-    getApplicationConfig: developerPortal.getApplicationConfig,
-    updateFeatureFlag: developerPortal.updateFeatureFlag,
-    getApiMetrics: developerPortal.getApiMetrics,
-    getDeveloperAnalytics: developerPortal.getDeveloperAnalytics
+    const updatedLog = {
+      ...errorLog,
+      resolved: true,
+      resolutionNotes: resolution,
+      resolvedAt: new Date()
+    };
+    this.errorLogs.set(errorId, updatedLog);
+    return updatedLog;
   };
   
-  return memoryFallbacks;
+  MemStorage.prototype.getRecentErrorCount = async function(hours: number) {
+    const since = new Date(Date.now() - hours * 60 * 60 * 1000);
+    let totalCount = 0;
+    let criticalCount = 0;
+    
+    this.errorLogs.forEach(log => {
+      if (log.createdAt >= since) {
+        totalCount++;
+        if (log.severity === 'critical') {
+          criticalCount++;
+        }
+      }
+    });
+    
+    return { totalCount, criticalCount };
+  };
+  
+  MemStorage.prototype.getDatabaseConnectionStats = async function() {
+    // Mock database connection stats for memory storage
+    return { total: 10, active: 3, idle: 7, waitingToConnect: 0 };
+  };
+  
+  MemStorage.prototype.getAverageApiResponseTime = async function() {
+    // Mock API response time for memory storage
+    return 120; // milliseconds
+  };
+  
+  MemStorage.prototype.getAverageDatabaseQueryTime = async function() {
+    // Mock database query time for memory storage
+    return 35; // milliseconds
+  };
+  
+  MemStorage.prototype.getApplicationConfig = developerPortal.getApplicationConfig;
+  MemStorage.prototype.updateFeatureFlag = developerPortal.updateFeatureFlag;
+  MemStorage.prototype.getApiMetrics = developerPortal.getApiMetrics;
+  MemStorage.prototype.getDeveloperAnalytics = developerPortal.getDeveloperAnalytics;
+  
+  // Fix the UserActivity methods in MemStorage
+  MemStorage.prototype.createUserActivity = async function(activityLog) {
+    const id = this.userActivityLogCurrentId++;
+    const newActivity = {
+      ...activityLog,
+      id,
+      createdAt: new Date()
+    };
+    this.userActivityLogs.set(id, newActivity);
+    return newActivity;
+  };
+  
+  MemStorage.prototype.getUserActivity = async function(userId) {
+    const activities = [];
+    this.userActivityLogs.forEach(log => {
+      if (log.userId === userId) {
+        activities.push(log);
+      }
+    });
+    return activities;
+  };
+  
+  console.log('Developer portal storage methods have been added to DatabaseStorage and MemStorage');
 }

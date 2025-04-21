@@ -58,6 +58,9 @@ app.use((req, res, next) => {
   const { seedData } = await import('./seeders/index');
   await seedData();
   
+  // Extend DatabaseStorage with developer portal methods
+  extendDatabaseStorage();
+  
   const server = await registerRoutes(app);
 
   // Global error handling middleware
