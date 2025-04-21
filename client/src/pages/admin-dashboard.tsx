@@ -182,11 +182,11 @@ export default function AdminDashboard() {
                         <TableRow key={user.id}>
                           <TableCell className="font-medium">{index + 1}</TableCell>
                           <TableCell>{user.username}</TableCell>
-                          <TableCell>{user.totalReduction.toFixed(2)} tons</TableCell>
+                          <TableCell>{user.totalReduction ? user.totalReduction.toFixed(2) : "0.00"} tons</TableCell>
                           <TableCell>
                             <Badge variant="outline">{user.accountType}</Badge>
                           </TableCell>
-                          <TableCell>{format(new Date(user.createdAt), "PPP")}</TableCell>
+                          <TableCell>{user.createdAt ? format(new Date(user.createdAt), "PPP") : "-"}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>

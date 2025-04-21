@@ -1124,6 +1124,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Admin user activity logs API
   app.get("/api/admin/activity-logs", async (req: Request, res: Response) => {
+    // Error handling wrapper
     try {
       // Requiring authentication for admin endpoints
       if (!req.isAuthenticated() || req.user.accountType !== 'admin') {
@@ -1134,21 +1135,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Extract filter parameters from query
-      const userId = req.query.userId ? Number(req.query.userId) : undefined;
-      const action = req.query.action as string | undefined;
-      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
-      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+      const filter: {userId?: number, action?: string, startDate?: Date, endDate?: Date} = {};
+      
+      // Add userId filter if provided
+      if (req.query.userId && req.query.userId !== "") {
+        filter.userId = Number(req.query.userId);
+      }
+      
+      // Add action filter if provided
+      if (req.query.action && req.query.action !== "") {
+        filter.action = req.query.action as string;
+      }
+      
+      // Add date range filters if provided
+      if (req.query.startDate && req.query.startDate !== "") {
+        filter.startDate = new Date(req.query.startDate as string);
+      }
+      
+      if (req.query.endDate && req.query.endDate !== "") {
+        filter.endDate = new Date(req.query.endDate as string);
+      }
       
       // Get activity logs with filters
-      const logs = await storage.getUserActivityLogs({
-        userId,
-        action,
-        startDate,
-        endDate
-      });
+      const logs = await storage.getUserActivityLogs(filter);
       
+      // Return successful response
       return res.status(200).json(logs);
     } catch (error: any) {
+      // Log and return error response
       console.error("Error fetching admin activity logs:", error);
       return res.status(500).json({
         status: "error",
@@ -1228,9 +1242,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         url: url || null,
         userAgent: userAgent || null,
         userId,
-        resolved: false,
-        resolution: null,
-        severity
+        severity: severity || "error" // Ensure severity has a default value
       });
       
       return res.status(201).json({
@@ -1242,7 +1254,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error logging client error:", error);
       return res.status(500).json({
         status: "error",
-        message: "Failed to log error"
+        message: "Failed to log error: " + error.message
       });
     }
   });
