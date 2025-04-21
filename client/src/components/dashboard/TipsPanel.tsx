@@ -8,8 +8,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { CategoryIcon } from "@/components/ui/category-icon";
 import { SustainabilityTip } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
 
 export default function TipsPanel() {
+  const { toast } = useToast();
   const { data: tips, isLoading } = useQuery({
     queryKey: ["/api/sustainability-tips"],
     queryFn: async () => {
@@ -88,6 +90,13 @@ export default function TipsPanel() {
                       variant="link" 
                       className="text-sm font-medium p-0 h-auto"
                       style={{ color: textColor }}
+                      onClick={() => {
+                        toast({
+                          title: "Tip Applied",
+                          description: `You've applied "${tip.title}" to your sustainability goals.`,
+                          variant: "default",
+                        });
+                      }}
                     >
                       Apply
                     </Button>
