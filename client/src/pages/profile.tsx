@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { 
   Card, 
   CardContent, 
@@ -27,13 +27,70 @@ import {
   ChevronRight,
   Edit,
   Image,
-  Shield
+  Shield,
+  Lock,
+  Bell,
+  Trash2,
+  CheckCircle,
+  LogOut,
+  Save,
+  X
 } from "lucide-react";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { 
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 import { SocialShare } from "@/components/SocialShare";
 import { formatDate } from "@/lib/utils";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+
+// Form schema for profile update
+const profileFormSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  email: z.string().email("Please enter a valid email address"),
+  bio: z.string().optional(),
+  company: z.string().optional(),
+  location: z.string().optional(),
+  website: z.string().url("Please enter a valid URL").optional().or(z.literal('')),
+  notifications: z.boolean().default(true),
+  publicProfile: z.boolean().default(true),
+  showAchievements: z.boolean().default(true),
+  allowSocialSharing: z.boolean().default(false)
+});
+
+type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 export default function Profile() {
   const [activeTab, setActiveTab] = useState("overview");
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const { toast } = useToast();
+  const { user: authUser, logoutMutation } = useAuth();
   
   // Fetch current user
   const { data: user, isLoading: isLoadingUser } = useQuery({
@@ -65,6 +122,97 @@ export default function Profile() {
     }
   });
   
+  // Profile update mutation
+  const updateProfileMutation = useMutation({
+    mutationFn: async (data: ProfileFormValues) => {
+      const res = await apiRequest("PATCH", "/api/users/me", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users/me"] });
+      setIsEditProfileOpen(false);
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been successfully updated.",
+        variant: "default",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Update failed",
+        description: error.message || "Failed to update profile.",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Change password mutation
+  const changePasswordMutation = useMutation({
+    mutationFn: async (data: { currentPassword: string; newPassword: string }) => {
+      const res = await apiRequest("POST", "/api/users/password", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      setIsChangePasswordOpen(false);
+      toast({
+        title: "Password changed",
+        description: "Your password has been successfully updated.",
+        variant: "default",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Password change failed",
+        description: error.message || "Failed to change password.",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Profile form setup
+  const form = useForm<ProfileFormValues>({
+    resolver: zodResolver(profileFormSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      username: "",
+      email: "",
+      bio: "",
+      company: "",
+      location: "",
+      website: "",
+      notifications: true,
+      publicProfile: true,
+      showAchievements: true,
+      allowSocialSharing: false
+    }
+  });
+  
+  // Update form when user data loads
+  useEffect(() => {
+    if (user) {
+      form.reset({
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        username: user.username || "",
+        email: user.email || "",
+        bio: user.bio || "",
+        company: user.company || "",
+        location: user.location || "",
+        website: user.website || "",
+        notifications: user.preferences?.notifications ?? true,
+        publicProfile: user.preferences?.publicProfile ?? true,
+        showAchievements: user.preferences?.showAchievements ?? true,
+        allowSocialSharing: user.preferences?.allowSocialSharing ?? false
+      });
+    }
+  }, [user, form]);
+  
+  // Form submit handler
+  const onSubmit = (data: ProfileFormValues) => {
+    updateProfileMutation.mutate(data);
+  };
+  
   // Get count of completed achievements
   const getCompletedAchievementsCount = () => {
     if (!achievements) return 0;
@@ -77,8 +225,283 @@ export default function Profile() {
     return activities.length;
   };
   
+  // Handle logout
+  const handleLogout = () => {
+    logoutMutation.mutate();
+  };
+  
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Edit Profile Dialog */}
+      <Dialog open={isEditProfileOpen} onOpenChange={setIsEditProfileOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edit Profile</DialogTitle>
+            <DialogDescription>
+              Update your personal information and profile settings.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-2">
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="firstName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>First Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="John" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="lastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Last Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Doe" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <FormField
+                control={form.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Username</FormLabel>
+                    <FormControl>
+                      <Input placeholder="johndoe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="john.doe@example.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="bio"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Bio</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Tell us a bit about yourself..." 
+                        className="resize-none" 
+                        {...field} 
+                        value={field.value || ""}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="company"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Company</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Company name" {...field} value={field.value || ""} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Location</FormLabel>
+                      <FormControl>
+                        <Input placeholder="City, Country" {...field} value={field.value || ""} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <FormField
+                control={form.control}
+                name="website"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Website</FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://example.com" {...field} value={field.value || ""} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <h4 className="font-medium text-sm pt-2">Privacy Settings</h4>
+              <div className="grid grid-cols-1 gap-4">
+                <FormField
+                  control={form.control}
+                  name="publicProfile"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">Public Profile</FormLabel>
+                        <FormDescription>
+                          Allow others to view your profile
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          aria-readonly
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="showAchievements"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">Show Achievements</FormLabel>
+                        <FormDescription>
+                          Display your achievements on your public profile
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          aria-readonly
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="allowSocialSharing"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">Social Sharing</FormLabel>
+                        <FormDescription>
+                          Allow automatic social media sharing
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          aria-readonly
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <DialogFooter>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setIsEditProfileOpen(false)}
+                  disabled={updateProfileMutation.isPending}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit"
+                  disabled={updateProfileMutation.isPending || !form.formState.isDirty}
+                >
+                  {updateProfileMutation.isPending ? (
+                    <>
+                      <span className="mr-2 h-4 w-4 animate-spin">●</span>
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      <span>Save Changes</span>
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Change Password Dialog */}
+      <Dialog open={isChangePasswordOpen} onOpenChange={setIsChangePasswordOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Change Password</DialogTitle>
+            <DialogDescription>
+              Update your account password for better security.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="current-password">Current Password</Label>
+              <Input id="current-password" type="password" />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="new-password">New Password</Label>
+              <Input id="new-password" type="password" />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="confirm-password">Confirm New Password</Label>
+              <Input id="confirm-password" type="password" />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsChangePasswordOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => setIsChangePasswordOpen(false)}>
+              <Lock className="mr-2 h-4 w-4" />
+              Update Password
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
       <div className="mb-8 md:flex md:items-center md:justify-between">
         <div className="flex-1 min-w-0">
           <h2 className="text-2xl font-bold text-neutral-800 leading-7 sm:truncate">
@@ -86,7 +509,7 @@ export default function Profile() {
           </h2>
         </div>
         <div className="mt-4 flex md:mt-0 md:ml-4 space-x-3">
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => setActiveTab("settings")}>
             <Settings className="mr-2 h-4 w-4" />
             Account Settings
           </Button>
@@ -161,7 +584,12 @@ export default function Profile() {
             
             <CardFooter className="border-t pt-4 flex flex-col gap-2">
               <div className="flex justify-between w-full">
-                <Button variant="outline" size="sm" className="flex-1 mr-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1 mr-2"
+                  onClick={() => setIsEditProfileOpen(true)}
+                >
                   <Edit className="mr-2 h-4 w-4" />
                   Edit Profile
                 </Button>
@@ -228,123 +656,6 @@ export default function Profile() {
               </div>
             </CardContent>
           </Card>
-          
-          {/* Privacy Settings */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg font-bold text-neutral-800">
-                Privacy & Preferences
-              </CardTitle>
-              <CardDescription>
-                Control your profile settings
-              </CardDescription>
-            </CardHeader>
-            
-            <CardContent className="pt-4">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 mr-3">
-                      <Shield className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-neutral-800">Public Profile</p>
-                      <p className="text-xs text-neutral-500">Allow others to view your profile</p>
-                    </div>
-                  </div>
-                  <div className="form-control">
-                    <input type="checkbox" className="h-4 w-4" defaultChecked />
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
-                      <Award className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-neutral-800">Show Achievements</p>
-                      <p className="text-xs text-neutral-500">Display achievements on public profile</p>
-                    </div>
-                  </div>
-                  <div className="form-control">
-                    <input type="checkbox" className="h-4 w-4" defaultChecked />
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 mr-3">
-                      <Share2 className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-neutral-800">Social Sharing</p>
-                      <p className="text-xs text-neutral-500">Allow automatic social media sharing</p>
-                    </div>
-                  </div>
-                  <div className="form-control">
-                    <input type="checkbox" className="h-4 w-4" />
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          {/* Connected Accounts */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg font-bold text-neutral-800">
-                Connected Services
-              </CardTitle>
-              <CardDescription>
-                Sync data with other platforms
-              </CardDescription>
-            </CardHeader>
-            
-            <CardContent className="pt-4">
-              <div className="space-y-3">
-                <div className="flex justify-between items-center p-3 border border-neutral-200 rounded-lg">
-                  <div className="flex items-center">
-                    <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
-                      <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z" />
-                      </svg>
-                    </div>
-                    <span className="font-medium text-neutral-800">Twitter</span>
-                  </div>
-                  <Button variant="ghost" size="sm">
-                    Connect
-                  </Button>
-                </div>
-                
-                <div className="flex justify-between items-center p-3 border border-neutral-200 rounded-lg">
-                  <div className="flex items-center">
-                    <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 mr-3">
-                      <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-                      </svg>
-                    </div>
-                    <span className="font-medium text-neutral-800">GitHub</span>
-                  </div>
-                  <Button variant="ghost" size="sm">
-                    Connect
-                  </Button>
-                </div>
-                
-                <div className="flex justify-between items-center p-3 border border-neutral-200 rounded-lg">
-                  <div className="flex items-center">
-                    <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
-                      <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M22.675 0h-21.35c-.732 0-1.325.593-1.325 1.325v21.351c0 .731.593 1.324 1.325 1.324h11.495v-9.294h-3.128v-3.622h3.128v-2.671c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12v9.293h6.116c.73 0 1.323-.593 1.323-1.325v-21.35c0-.732-.593-1.325-1.325-1.325z" />
-                      </svg>
-                    </div>
-                    <span className="font-medium text-neutral-800">Facebook</span>
-                  </div>
-                  <Badge className="bg-green-100 text-green-700 hover:bg-green-100">Connected</Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
         
         {/* Main Content */}
@@ -352,10 +663,11 @@ export default function Profile() {
           <Card>
             <CardHeader className="pb-0">
               <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid grid-cols-3">
+                <TabsList className="grid grid-cols-4">
                   <TabsTrigger value="overview">Overview</TabsTrigger>
                   <TabsTrigger value="activities">Activities</TabsTrigger>
                   <TabsTrigger value="achievements">Achievements</TabsTrigger>
+                  <TabsTrigger value="settings">Settings</TabsTrigger>
                 </TabsList>
               </Tabs>
             </CardHeader>
@@ -430,64 +742,6 @@ export default function Profile() {
                           onClick={() => setActiveTab("activities")}
                         >
                           View All Activities
-                          <ChevronRight className="ml-1 h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
-                
-                <div>
-                  <h3 className="text-lg font-bold text-neutral-800 mb-4">Achievements Showcase</h3>
-                  
-                  {isLoadingAchievements ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {[1, 2].map((i) => (
-                        <div key={i} className="p-4 border border-neutral-200 rounded-lg animate-pulse">
-                          <div className="flex items-center">
-                            <div className="h-12 w-12 bg-neutral-200 rounded-full"></div>
-                            <div className="ml-3">
-                              <div className="h-4 w-32 bg-neutral-200 rounded mb-2"></div>
-                              <div className="h-3 w-24 bg-neutral-200 rounded"></div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : !achievements || achievements.length === 0 ? (
-                    <div className="text-center py-8 text-neutral-500">
-                      <p>No achievements yet. Start tracking to earn achievements!</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {achievements
-                        .filter((a: any) => a.isCompleted)
-                        .slice(0, 4)
-                        .map((achievement: any) => (
-                          <div key={achievement.id} className="p-4 border border-neutral-200 rounded-lg">
-                            <div className="flex items-center">
-                              <div className="h-12 w-12 flex-shrink-0 flex items-center justify-center rounded-full bg-amber-100 text-amber-600">
-                                <Award className="h-6 w-6" />
-                              </div>
-                              <div className="ml-3">
-                                <h4 className="font-medium text-neutral-800">
-                                  {achievement.achievement.name}
-                                </h4>
-                                <p className="text-sm text-neutral-600">
-                                  {achievement.achievement.description}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      
-                      {achievements.filter((a: any) => a.isCompleted).length > 4 && (
-                        <Button 
-                          variant="ghost" 
-                          className="w-full text-primary"
-                          onClick={() => setActiveTab("achievements")}
-                        >
-                          View All Achievements
                           <ChevronRight className="ml-1 h-4 w-4" />
                         </Button>
                       )}
@@ -578,42 +832,27 @@ export default function Profile() {
                       {achievements.filter((a: any) => a.isCompleted).length === 0 ? (
                         <p className="text-sm text-neutral-600">No completed achievements yet</p>
                       ) : (
-                        achievements
-                          .filter((a: any) => a.isCompleted)
-                          .map((achievement: any) => (
-                            <div key={achievement.id} className="p-4 border border-neutral-200 rounded-lg bg-green-50">
-                              <div className="flex items-center">
-                                <div className="h-12 w-12 flex-shrink-0 flex items-center justify-center rounded-full bg-green-100 text-green-600">
-                                  <Award className="h-6 w-6" />
-                                </div>
-                                <div className="ml-3 flex-1">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center">
-                                      <h4 className="font-medium text-neutral-800">
-                                        {achievement.achievement.name}
-                                      </h4>
-                                      <Badge className="ml-2 bg-green-100 text-green-700">Completed</Badge>
-                                    </div>
-                                    <SocialShare
-                                      title={`I earned the ${achievement.achievement.name} achievement!`}
-                                      text={`I just earned the "${achievement.achievement.name}" achievement on EcoTrack: ${achievement.achievement.description}`}
-                                      triggerElement={
-                                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                                          <Share2 className="h-4 w-4" />
-                                        </Button>
-                                      }
-                                    />
+                        <div className="space-y-3">
+                          {achievements
+                            .filter((a: any) => a.isCompleted)
+                            .map((achievement: any) => (
+                              <div key={achievement.id} className="p-4 border border-neutral-200 rounded-lg">
+                                <div className="flex items-center">
+                                  <div className="h-12 w-12 flex-shrink-0 flex items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                                    <Award className="h-6 w-6" />
                                   </div>
-                                  <p className="text-sm text-neutral-600">
-                                    {achievement.achievement.description}
-                                  </p>
-                                  <p className="text-xs text-neutral-500 mt-1">
-                                    Earned on {formatDate(achievement.dateEarned)}
-                                  </p>
+                                  <div className="ml-3">
+                                    <h4 className="font-medium text-neutral-800">
+                                      {achievement.name}
+                                    </h4>
+                                    <p className="text-sm text-neutral-600">
+                                      {achievement.description}
+                                    </p>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          ))
+                            ))}
+                        </div>
                       )}
                     </div>
                     
@@ -623,41 +862,248 @@ export default function Profile() {
                       {achievements.filter((a: any) => !a.isCompleted).length === 0 ? (
                         <p className="text-sm text-neutral-600">No achievements in progress</p>
                       ) : (
-                        achievements
-                          .filter((a: any) => !a.isCompleted)
-                          .map((achievement: any) => (
-                            <div key={achievement.id} className="p-4 border border-neutral-200 rounded-lg">
-                              <div className="flex items-center">
-                                <div className="h-12 w-12 flex-shrink-0 flex items-center justify-center rounded-full bg-blue-100 text-blue-600">
-                                  <Award className="h-6 w-6" />
-                                </div>
-                                <div className="ml-3 flex-1">
-                                  <h4 className="font-medium text-neutral-800">
-                                    {achievement.achievement.name}
-                                  </h4>
-                                  <p className="text-sm text-neutral-600">
-                                    {achievement.achievement.description}
-                                  </p>
-                                  <div className="mt-2">
-                                    <div className="flex justify-between text-xs text-neutral-600 mb-1">
-                                      <span>Progress: {achievement.progress}/{achievement.achievement.thresholdValue}</span>
-                                      <span>{Math.round((achievement.progress / achievement.achievement.thresholdValue) * 100)}%</span>
-                                    </div>
-                                    <div className="w-full bg-neutral-200 rounded-full h-1.5">
+                        <div className="space-y-3">
+                          {achievements
+                            .filter((a: any) => !a.isCompleted)
+                            .map((achievement: any) => (
+                              <div key={achievement.id} className="p-4 border border-neutral-200 rounded-lg">
+                                <div className="flex items-center">
+                                  <div className="h-12 w-12 flex-shrink-0 flex items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                                    <Award className="h-6 w-6" />
+                                  </div>
+                                  <div className="ml-3">
+                                    <h4 className="font-medium text-neutral-800">
+                                      {achievement.name}
+                                    </h4>
+                                    <p className="text-sm text-neutral-600">
+                                      {achievement.description}
+                                    </p>
+                                    <div className="mt-2 bg-neutral-100 rounded-full h-2 overflow-hidden">
                                       <div 
-                                        className="bg-blue-600 h-1.5 rounded-full" 
-                                        style={{ width: `${(achievement.progress / achievement.achievement.thresholdValue) * 100}%` }}
+                                        className="bg-blue-600 h-full rounded-full" 
+                                        style={{ width: `${(achievement.progress / achievement.target) * 100}%` }}
                                       ></div>
                                     </div>
+                                    <p className="text-xs text-neutral-500 mt-1">
+                                      {achievement.progress} / {achievement.target}
+                                    </p>
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                          ))
+                            ))}
+                        </div>
                       )}
                     </div>
                   </div>
                 )}
+              </TabsContent>
+              
+              <TabsContent value="settings" className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-bold text-neutral-800 mb-4">Account Settings</h3>
+                  
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <div className="flex items-center">
+                            <UserIcon className="h-5 w-5 mr-2 text-primary" />
+                            <CardTitle className="text-md">Personal Information</CardTitle>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <p className="text-sm text-neutral-600">Name</p>
+                              <p className="font-medium text-neutral-800">{user?.firstName} {user?.lastName}</p>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <p className="text-sm text-neutral-600">Username</p>
+                              <p className="font-medium text-neutral-800">@{user?.username}</p>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <p className="text-sm text-neutral-600">Email</p>
+                              <p className="font-medium text-neutral-800">{user?.email}</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                        <CardFooter>
+                          <Button 
+                            variant="outline" 
+                            className="w-full"
+                            onClick={() => setIsEditProfileOpen(true)}
+                          >
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit Profile
+                          </Button>
+                        </CardFooter>
+                      </Card>
+                      
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <div className="flex items-center">
+                            <Lock className="h-5 w-5 mr-2 text-primary" />
+                            <CardTitle className="text-md">Security</CardTitle>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <p className="text-sm text-neutral-600">Password</p>
+                              <p className="font-medium text-neutral-800">••••••••</p>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <p className="text-sm text-neutral-600">Last updated</p>
+                              <p className="font-medium text-neutral-800">30 days ago</p>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <p className="text-sm text-neutral-600">Two-factor</p>
+                              <Badge variant="outline" className="bg-red-50 text-red-700 hover:bg-red-50">Disabled</Badge>
+                            </div>
+                          </div>
+                        </CardContent>
+                        <CardFooter>
+                          <Button 
+                            variant="outline" 
+                            className="w-full"
+                            onClick={() => setIsChangePasswordOpen(true)}
+                          >
+                            <Lock className="mr-2 h-4 w-4" />
+                            Change Password
+                          </Button>
+                        </CardFooter>
+                      </Card>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 gap-4">
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <div className="flex items-center">
+                            <Bell className="h-5 w-5 mr-2 text-primary" />
+                            <CardTitle className="text-md">Notifications</CardTitle>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-medium text-neutral-800">Email Notifications</p>
+                                <p className="text-sm text-neutral-600">Receive updates via email</p>
+                              </div>
+                              <Switch defaultChecked id="email-notifications" />
+                            </div>
+                            
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-medium text-neutral-800">Achievement Alerts</p>
+                                <p className="text-sm text-neutral-600">Get notified when you earn achievements</p>
+                              </div>
+                              <Switch defaultChecked id="achievement-alerts" />
+                            </div>
+                            
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-medium text-neutral-800">Weekly Reports</p>
+                                <p className="text-sm text-neutral-600">Receive weekly carbon footprint summary</p>
+                              </div>
+                              <Switch defaultChecked id="weekly-reports" />
+                            </div>
+                            
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-medium text-neutral-800">Marketing Communications</p>
+                                <p className="text-sm text-neutral-600">Receive news and promotional offers</p>
+                              </div>
+                              <Switch id="marketing-comms" />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 gap-4">
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <div className="flex items-center">
+                            <Shield className="h-5 w-5 mr-2 text-primary" />
+                            <CardTitle className="text-md">Privacy & Data</CardTitle>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-medium text-neutral-800">Public Profile</p>
+                                <p className="text-sm text-neutral-600">Allow others to view your profile</p>
+                              </div>
+                              <Switch defaultChecked id="public-profile" />
+                            </div>
+                            
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-medium text-neutral-800">Show Achievements</p>
+                                <p className="text-sm text-neutral-600">Display achievements on public profile</p>
+                              </div>
+                              <Switch defaultChecked id="show-achievements" />
+                            </div>
+                            
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-medium text-neutral-800">Data Collection</p>
+                                <p className="text-sm text-neutral-600">Allow anonymous data collection for improvements</p>
+                              </div>
+                              <Switch defaultChecked id="data-collection" />
+                            </div>
+                          </div>
+                        </CardContent>
+                        <CardFooter className="flex flex-col space-y-2">
+                          <Button variant="outline" className="w-full">
+                            <Download className="mr-2 h-4 w-4" />
+                            Download My Data
+                          </Button>
+                          <Button variant="outline" className="w-full text-destructive border-destructive/30 hover:bg-destructive/10">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete Account
+                          </Button>
+                        </CardFooter>
+                      </Card>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 gap-4">
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <div className="flex items-center">
+                            <LogOut className="h-5 w-5 mr-2 text-primary" />
+                            <CardTitle className="text-md">Account Actions</CardTitle>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-sm text-neutral-600 mb-4">
+                            When you log out, your session will be cleared from this device. You'll need to log in again to access your account.
+                          </p>
+                          <Button 
+                            variant="destructive" 
+                            className="w-full"
+                            onClick={handleLogout}
+                            disabled={logoutMutation.isPending}
+                          >
+                            {logoutMutation.isPending ? (
+                              <>
+                                <span className="mr-2 h-4 w-4 animate-spin">●</span>
+                                <span>Logging out...</span>
+                              </>
+                            ) : (
+                              <>
+                                <LogOut className="mr-2 h-4 w-4" />
+                                <span>Log out</span>
+                              </>
+                            )}
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+                </div>
               </TabsContent>
             </CardContent>
           </Card>
