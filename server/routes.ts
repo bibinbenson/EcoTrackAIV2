@@ -1082,11 +1082,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Create admin user activity log
+  app.post("/api/admin/activity-logs", async (req: Request, res: Response) => {
+    try {
+      // Requiring authentication for admin endpoints
+      if (!req.isAuthenticated() || req.user.accountType !== 'admin') {
+        return res.status(403).json({
+          status: "error",
+          message: "Unauthorized: Admin access required"
+        });
+      }
+      
+      const { userId, action, details, ipAddress, userAgent } = req.body;
+      
+      // Validate required fields
+      if (!userId || !action) {
+        return res.status(400).json({
+          status: "error",
+          message: "Missing required fields: userId and action are required"
+        });
+      }
+      
+      // Create the activity log
+      const log = await storage.createUserActivityLog({
+        userId,
+        action,
+        details: details || null,
+        ipAddress: ipAddress || null,
+        userAgent: userAgent || null
+      });
+      
+      return res.status(201).json(log);
+    } catch (error: any) {
+      console.error("Error creating admin activity log:", error);
+      return res.status(500).json({
+        status: "error",
+        message: "Failed to create activity log: " + error.message
+      });
+    }
+  });
+
   // Admin user activity logs API
   app.get("/api/admin/activity-logs", async (req: Request, res: Response) => {
     try {
       // Requiring authentication for admin endpoints
-      if (!req.isAuthenticated() || req.user.role !== 'admin') {
+      if (!req.isAuthenticated() || req.user.accountType !== 'admin') {
         return res.status(403).json({
           status: "error",
           message: "Unauthorized: Admin access required"
@@ -1121,7 +1161,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/analytics", async (req: Request, res: Response) => {
     try {
       // Requiring authentication for admin endpoints
-      if (!req.isAuthenticated() || req.user.role !== 'admin') {
+      if (!req.isAuthenticated() || req.user.accountType !== 'admin') {
         return res.status(403).json({
           status: "error",
           message: "Unauthorized: Admin access required"
@@ -1160,6 +1200,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Error logging API 
+  app.post("/api/errors", async (req: Request, res: Response) => {
+    try {
+      const { 
+        errorMessage, 
+        stackTrace, 
+        url, 
+        userAgent, 
+        severity = 'medium'
+      } = req.body;
+      
+      // Validate required fields
+      if (!errorMessage) {
+        return res.status(400).json({
+          status: "error",
+          message: "Missing required field: errorMessage"
+        });
+      }
+      
+      const userId = req.isAuthenticated() ? req.user.id : null;
+      
+      // Create the error log
+      const errorLog = await storage.createErrorLog({
+        errorMessage,
+        stackTrace: stackTrace || null,
+        url: url || null,
+        userAgent: userAgent || null,
+        userId,
+        resolved: false,
+        resolution: null,
+        severity
+      });
+      
+      return res.status(201).json({
+        status: "success",
+        message: "Error logged successfully",
+        errorId: errorLog.id
+      });
+    } catch (error: any) {
+      console.error("Error logging client error:", error);
+      return res.status(500).json({
+        status: "error",
+        message: "Failed to log error"
+      });
+    }
+  });
+  
   const httpServer = createServer(app);
   return httpServer;
 }
