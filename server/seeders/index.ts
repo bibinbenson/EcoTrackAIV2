@@ -1,6 +1,7 @@
 import { seedAchievements } from './achievementSeeder';
 import { seedRewards } from './rewardSeeder';
 import { seedCategories } from './categorySeeder';
+import { seedUsers } from './userSeeder';
 
 /**
  * Initialize all default data for the application
@@ -20,6 +21,10 @@ export async function seedData() {
     // Seed rewards
     console.log('Seeding rewards...');
     await seedRewards();
+    
+    // Seed users including admin
+    console.log('Seeding users...');
+    await seedUsers();
     
     console.log('Database seeding completed successfully!');
   } catch (error) {
