@@ -1278,6 +1278,251 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
+  // ======== Developer Portal API Endpoints ========
+  
+  // Get all error logs for the developer portal
+  app.get("/api/developer/error-logs", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      // Only allow admin users to access error logs
+      if (req.user?.accountType !== 'admin') {
+        return res.status(403).json({
+          status: "error",
+          message: "Access denied: Admin privileges required"
+        });
+      }
+      
+      const errorLogs = await storage.getErrorLogs();
+      return res.json(errorLogs);
+    } catch (error: any) {
+      console.error("Error fetching error logs:", error);
+      return res.status(500).json({
+        status: "error",
+        message: "Failed to fetch error logs: " + error.message
+      });
+    }
+  });
+  
+  // Resolve an error log
+  app.post("/api/developer/error-logs/:id/resolve", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      // Only allow admin users to resolve error logs
+      if (req.user?.accountType !== 'admin') {
+        return res.status(403).json({
+          status: "error",
+          message: "Access denied: Admin privileges required"
+        });
+      }
+      
+      const errorId = parseInt(req.params.id);
+      if (isNaN(errorId)) {
+        return res.status(400).json({
+          status: "error",
+          message: "Invalid error ID"
+        });
+      }
+      
+      const { resolution } = req.body;
+      if (!resolution) {
+        return res.status(400).json({
+          status: "error",
+          message: "Resolution is required"
+        });
+      }
+      
+      const updatedError = await storage.resolveErrorLog(errorId, resolution);
+      if (!updatedError) {
+        return res.status(404).json({
+          status: "error",
+          message: "Error log not found"
+        });
+      }
+      
+      return res.json({
+        status: "success",
+        message: "Error marked as resolved",
+        error: updatedError
+      });
+    } catch (error: any) {
+      console.error("Error resolving error log:", error);
+      return res.status(500).json({
+        status: "error",
+        message: "Failed to resolve error log: " + error.message
+      });
+    }
+  });
+  
+  // Get system health metrics
+  app.get("/api/developer/system-health", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      // Only allow admin users to access system health
+      if (req.user?.accountType !== 'admin') {
+        return res.status(403).json({
+          status: "error",
+          message: "Access denied: Admin privileges required"
+        });
+      }
+      
+      // Get database connection stats
+      const connectionStats = await storage.getDatabaseConnectionStats();
+      
+      // Get recent error counts
+      const lastDayErrors = await storage.getRecentErrorCount(24);
+      const criticalErrors = await storage.getCriticalErrorCount(24);
+      
+      // Create a response with system health data
+      const systemHealth = {
+        status: lastDayErrors.criticalCount > 10 ? 'critical' : 
+                lastDayErrors.criticalCount > 5 ? 'degraded' : 'healthy',
+        lastChecked: new Date().toISOString(),
+        components: {
+          api: {
+            status: criticalErrors > 5 ? 'critical' : 
+                   criticalErrors > 2 ? 'degraded' : 'healthy',
+            responseTime: await storage.getAverageApiResponseTime(),
+            uptime: 99.8 // Placeholder - would come from a monitoring service in production
+          },
+          database: {
+            status: connectionStats.waitingToConnect > 5 ? 'critical' :
+                   connectionStats.waitingToConnect > 2 ? 'degraded' : 'healthy',
+            connectionPool: connectionStats,
+            queryAvgTime: await storage.getAverageDatabaseQueryTime()
+          },
+          memory: {
+            usage: process.memoryUsage().heapUsed,
+            total: process.memoryUsage().heapTotal,
+            percentage: Math.round((process.memoryUsage().heapUsed / process.memoryUsage().heapTotal) * 100)
+          },
+          cpu: {
+            usage: Math.round(Math.random() * 20 + 40) // Placeholder - would use a proper CPU measurement in production
+          },
+          storage: {
+            usage: 500 * 1024 * 1024, // Placeholder - 500MB
+            total: 5 * 1024 * 1024 * 1024, // Placeholder - 5GB
+            percentage: Math.round((500 / (5 * 1024)) * 100)
+          }
+        },
+        recentErrors: {
+          count: lastDayErrors.totalCount,
+          criticalCount: lastDayErrors.criticalCount,
+          timeframe: '24h'
+        }
+      };
+      
+      return res.json(systemHealth);
+    } catch (error: any) {
+      console.error("Error fetching system health metrics:", error);
+      return res.status(500).json({
+        status: "error",
+        message: "Failed to fetch system health metrics: " + error.message
+      });
+    }
+  });
+  
+  // Get API usage metrics
+  app.get("/api/developer/api-metrics", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      // Only allow admin users to access API metrics
+      if (req.user?.accountType !== 'admin') {
+        return res.status(403).json({
+          status: "error",
+          message: "Access denied: Admin privileges required"
+        });
+      }
+      
+      const metrics = await storage.getApiMetrics();
+      return res.json(metrics);
+    } catch (error: any) {
+      console.error("Error fetching API metrics:", error);
+      return res.status(500).json({
+        status: "error",
+        message: "Failed to fetch API metrics: " + error.message
+      });
+    }
+  });
+  
+  // Get application configuration and feature flags
+  app.get("/api/developer/config", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      // Only allow admin users to access configuration
+      if (req.user?.accountType !== 'admin') {
+        return res.status(403).json({
+          status: "error",
+          message: "Access denied: Admin privileges required"
+        });
+      }
+      
+      const config = await storage.getApplicationConfig();
+      return res.json(config);
+    } catch (error: any) {
+      console.error("Error fetching application config:", error);
+      return res.status(500).json({
+        status: "error",
+        message: "Failed to fetch application config: " + error.message
+      });
+    }
+  });
+  
+  // Update a feature flag
+  app.patch("/api/developer/config/feature-flags/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      // Only allow admin users to update feature flags
+      if (req.user?.accountType !== 'admin') {
+        return res.status(403).json({
+          status: "error",
+          message: "Access denied: Admin privileges required"
+        });
+      }
+      
+      const flagId = req.params.id;
+      const { enabled } = req.body;
+      
+      if (typeof enabled !== 'boolean') {
+        return res.status(400).json({
+          status: "error",
+          message: "Expected 'enabled' to be a boolean value"
+        });
+      }
+      
+      const updatedFlag = await storage.updateFeatureFlag(flagId, { enabled });
+      
+      return res.json({
+        status: "success",
+        message: `Feature flag ${enabled ? 'enabled' : 'disabled'} successfully`,
+        featureFlag: updatedFlag
+      });
+    } catch (error: any) {
+      console.error("Error updating feature flag:", error);
+      return res.status(500).json({
+        status: "error",
+        message: "Failed to update feature flag: " + error.message
+      });
+    }
+  });
+  
+  // Get developer analytics data
+  app.get("/api/developer/analytics", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      // Only allow admin users to access developer analytics
+      if (req.user?.accountType !== 'admin') {
+        return res.status(403).json({
+          status: "error",
+          message: "Access denied: Admin privileges required"
+        });
+      }
+      
+      const timeframe = req.query.timeframe as string || '24h';
+      const analytics = await storage.getDeveloperAnalytics(timeframe);
+      
+      return res.json(analytics);
+    } catch (error: any) {
+      console.error("Error fetching developer analytics:", error);
+      return res.status(500).json({
+        status: "error",
+        message: "Failed to fetch developer analytics: " + error.message
+      });
+    }
+  });
   
   const httpServer = createServer(app);
   return httpServer;
