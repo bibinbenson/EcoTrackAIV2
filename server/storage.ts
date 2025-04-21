@@ -202,8 +202,19 @@ export interface IStorage {
   getErrorLogs(): Promise<ErrorLog[]>;
   
   // User analytics operations
-  createUserActivityLog(activityLog: InsertUserActivityLog): Promise<UserActivityLog>;
-  getUserActivityLogs(userId: number): Promise<UserActivityLog[]>;
+  createUserActivity(activityLog: InsertUserActivity): Promise<UserActivity>;
+  getUserActivity(userId: number): Promise<UserActivity[]>;
+  
+  // Developer portal operations
+  resolveErrorLog(errorId: number, resolution: string): Promise<ErrorLog | undefined>;
+  getRecentErrorCount(hours: number): Promise<{totalCount: number, criticalCount: number}>;
+  getDatabaseConnectionStats(): Promise<{total: number, active: number, idle: number, waitingToConnect: number}>;
+  getAverageApiResponseTime(): Promise<number>;
+  getAverageDatabaseQueryTime(): Promise<number>;
+  getApplicationConfig(): Promise<{featureFlags: any[], environmentVariables: any[]}>;
+  updateFeatureFlag(id: string, data: {enabled: boolean}): Promise<any>;
+  getApiMetrics(): Promise<{endpoint: string, requests: number, avgResponseTime: number, errorRate: number, p95ResponseTime: number, p99ResponseTime: number}[]>;
+  getDeveloperAnalytics(timeframe: string): Promise<any>;
 }
 
 // In-memory implementation of storage

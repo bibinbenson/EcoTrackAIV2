@@ -6,6 +6,7 @@ import { seedData } from "./seeders/index";
 // Import method implementations for DatabaseStorage
 import "./achievementMethods";
 import "./betaMethods";
+import { extendDatabaseStorage } from "./developerStorageExtender";
 
 const app = express();
 app.use(express.json());
