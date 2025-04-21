@@ -24,6 +24,7 @@ import ESGTrading from "@/pages/esg-trading";
 import AdvancedCarbonCalculator from "@/pages/advanced-carbon-calculator";
 import AuthPage from "@/pages/auth-page";
 import AdminDashboard from "@/pages/admin-dashboard";
+import DeveloperPortal from "@/pages/developer-portal";
 
 // Supply Chain pages
 import Suppliers from "@/pages/suppliers";
@@ -67,6 +68,7 @@ function Router() {
       
       {/* Admin-only Routes */}
       <ProtectedRoute path="/admin-dashboard" component={AdminDashboard} />
+      <ProtectedRoute path="/developer-portal" component={DeveloperPortal} />
       
       <Route component={NotFound} />
     </Switch>

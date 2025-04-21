@@ -29,7 +29,9 @@ import {
   Legend,
   ResponsiveContainer,
   PieChart,
-  Pie
+  Pie,
+  AreaChart as RechartsAreaChart,
+  Area
 } from 'recharts';
 
 // API Analytics data model
@@ -550,7 +552,7 @@ export default function DevAnalytics() {
                         <XAxis 
                           dataKey="endpoint"
                           stroke="#94a3b8"
-                          tick={{ fontSize: 12, angle: -45, textAnchor: 'end' }}
+                          tick={{ fontSize: 12 }}
                           interval={0}
                         />
                         <YAxis 
