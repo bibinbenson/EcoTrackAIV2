@@ -7,6 +7,7 @@ import LeaderboardPanel from "@/components/dashboard/LeaderboardPanel";
 import TipsPanel from "@/components/dashboard/TipsPanel";
 import MarketplacePreview from "@/components/dashboard/MarketplacePreview";
 import QuickActions from "@/components/dashboard/QuickActions";
+import { ComparisonWidget } from "@/components/dashboard/ComparisonWidget";
 
 export default function Dashboard() {
   // Fetch current user
@@ -74,6 +75,11 @@ export default function Dashboard() {
         <div>
           <AchievementsPanel />
         </div>
+      </div>
+      
+      {/* Carbon Footprint Comparison */}
+      <div className="mt-8">
+        <ComparisonWidget />
       </div>
 
       {/* Secondary Content */}

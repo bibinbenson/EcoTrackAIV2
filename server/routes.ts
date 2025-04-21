@@ -167,6 +167,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/carbon-footprint", async (req: Request, res: Response) => {
     const userId = 1; // For simplicity, use fixed user
+    const timeRange = req.query.timeRange as string || 'monthly';
     
     // Parse date range if provided
     let startDate: Date | undefined = undefined;
@@ -181,7 +182,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     const footprint = await storage.getUserCarbonFootprint(userId, startDate, endDate);
-    return res.json({ total: footprint });
+    
+    // For the comparison widget, we'll add some historical data
+    // In a real app, this would come from actual historical records in the database
+    let previousPeriod = 0;
+    
+    // Simulate historical data based on time range
+    if (timeRange === 'monthly') {
+      previousPeriod = footprint * 1.2; // Last month was 20% higher
+    } else if (timeRange === 'quarterly') {
+      previousPeriod = footprint * 1.15; // Last quarter was 15% higher
+    } else if (timeRange === 'yearly') {
+      previousPeriod = footprint * 1.35; // Last year was 35% higher
+    }
+    
+    return res.json({ 
+      total: footprint,
+      previousPeriod,
+      timeRange
+    });
   });
 
   app.get("/api/carbon-by-category", async (req: Request, res: Response) => {
