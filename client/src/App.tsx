@@ -67,8 +67,8 @@ function Router() {
       <ProtectedRoute path="/feedback" component={Feedback} />
       
       {/* Admin-only Routes */}
-      <ProtectedRoute path="/admin-dashboard" component={AdminDashboard} />
-      <ProtectedRoute path="/developer-portal" component={DeveloperPortal} />
+      <ProtectedRoute path="/admin-dashboard" component={AdminDashboard} allowedRoles={["admin"]} />
+      <ProtectedRoute path="/developer-portal" component={DeveloperPortal} allowedRoles={["admin"]} />
       
       <Route component={NotFound} />
     </Switch>

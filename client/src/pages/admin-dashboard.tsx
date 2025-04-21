@@ -6,7 +6,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, Users, TrendingUp, Award, Calendar } from "lucide-react";
+import { Loader2, Users, TrendingUp, Award, Calendar, Code2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -44,9 +44,21 @@ export default function AdminDashboard() {
           <h1 className="text-3xl font-bold">Admin Dashboard</h1>
           <p className="text-muted-foreground">Monitor platform activity and user engagement</p>
         </div>
-        <Badge variant="outline" className="px-3 py-1 text-sm">
-          {format(new Date(), "MMMM d, yyyy")}
-        </Badge>
+        <div className="flex items-center space-x-4">
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-2"
+            asChild
+          >
+            <a href="/developer-portal">
+              <span>Developer Portal</span>
+              <Code2 className="h-4 w-4" />
+            </a>
+          </Button>
+          <Badge variant="outline" className="px-3 py-1 text-sm">
+            {format(new Date(), "MMMM d, yyyy")}
+          </Badge>
+        </div>
       </div>
       
       <Separator />
