@@ -963,10 +963,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Error logging API for client-side errors
   app.post("/api/error-logs", async (req: Request, res: Response) => {
     try {
-      // Optionally include user ID if available
+      // Include user ID if authenticated
       const errorData = {
         ...req.body,
-        userId: 1, // For logged-in users
+        userId: req.isAuthenticated() ? req.user.id : null,
         userAgent: req.headers["user-agent"]
       };
       
@@ -992,10 +992,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User activity tracking for analytics
   app.post("/api/user-activity", async (req: Request, res: Response) => {
     try {
-      // For simplicity, force userId to 1
+      // Use authenticated user ID if available, otherwise fallback to default
       const activityData = {
         ...req.body,
-        userId: 1
+        userId: req.isAuthenticated() ? req.user.id : 1
       };
       
       const validatedData = insertUserActivitySchema.parse(activityData);
@@ -1019,7 +1019,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User onboarding tracking
   app.post("/api/onboarding/complete", async (req: Request, res: Response) => {
     try {
-      const userId = 1; // For simplicity, use fixed user
+      // Use authenticated user ID if available, otherwise fallback to default
+      const userId = req.isAuthenticated() ? req.user.id : 1;
       await storage.updateUserOnboardingStatus(userId, true);
       
       // Also log this as a user activity
@@ -1041,9 +1042,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/onboarding/status", async (_req: Request, res: Response) => {
+  app.get("/api/onboarding/status", async (req: Request, res: Response) => {
     try {
-      const userId = 1; // For simplicity, use fixed user
+      // Use authenticated user ID if available, otherwise fallback to default
+      const userId = req.isAuthenticated() ? req.user.id : 1;
       const user = await storage.getUser(userId);
       
       if (!user) {
