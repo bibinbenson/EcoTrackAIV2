@@ -37,6 +37,7 @@ import createMemoryStore from "memorystore";
 
 // Interface for storage operations
 export interface IStorage {
+  // Note: UserActivityLog renamed to UserActivity to avoid naming conflicts with AdminUserLog
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -275,6 +276,8 @@ export class MemStorage implements IStorage {
     this.userFeedback = new Map();
     this.errorLogs = new Map();
     this.userActivityLogs = new Map();
+    this.adminLogs = new Map();
+    this.systemStatsMap = new Map();
 
     this.userCurrentId = 1;
     this.categoryCurrentId = 1;
@@ -295,6 +298,8 @@ export class MemStorage implements IStorage {
     this.userFeedbackCurrentId = 1;
     this.errorLogCurrentId = 1;
     this.userActivityLogCurrentId = 1;
+    this.adminLogCurrentId = 1;
+    this.systemStatCurrentId = 1;
 
     // Initialize with default data
     this.initializeDefaultData();
