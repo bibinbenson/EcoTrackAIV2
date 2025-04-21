@@ -1081,6 +1081,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  
+  // Admin user activity logs API
+  app.get("/api/admin/activity-logs", async (req: Request, res: Response) => {
+    try {
+      // Requiring authentication for admin endpoints
+      if (!req.isAuthenticated() || req.user.role !== 'admin') {
+        return res.status(403).json({
+          status: "error",
+          message: "Unauthorized: Admin access required"
+        });
+      }
+      
+      // Extract filter parameters from query
+      const userId = req.query.userId ? Number(req.query.userId) : undefined;
+      const action = req.query.action as string | undefined;
+      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+      
+      // Get activity logs with filters
+      const logs = await storage.getUserActivityLogs({
+        userId,
+        action,
+        startDate,
+        endDate
+      });
+      
+      return res.status(200).json(logs);
+    } catch (error: any) {
+      console.error("Error fetching admin activity logs:", error);
+      return res.status(500).json({
+        status: "error",
+        message: "Failed to fetch activity logs: " + error.message
+      });
+    }
+  });
+  
+  // Admin dashboard analytics API
+  app.get("/api/admin/analytics", async (req: Request, res: Response) => {
+    try {
+      // Requiring authentication for admin endpoints
+      if (!req.isAuthenticated() || req.user.role !== 'admin') {
+        return res.status(403).json({
+          status: "error",
+          message: "Unauthorized: Admin access required"
+        });
+      }
+      
+      // Get all the analytics data
+      const [
+        userSignupStats,
+        activeUserStats,
+        accountTypeDistribution,
+        totalCarbonReduction,
+        topUsers
+      ] = await Promise.all([
+        storage.getUserSignupStats('monthly'),
+        storage.getActiveUserStats('monthly'),
+        storage.getUserCountByAccountType(),
+        storage.getTotalCarbonReduction(),
+        storage.getTopPerformingUsers(5)
+      ]);
+      
+      // Return all the data
+      return res.status(200).json({
+        userSignupStats,
+        activeUserStats,
+        accountTypeDistribution,
+        totalCarbonReduction,
+        topUsers
+      });
+    } catch (error: any) {
+      console.error("Error fetching admin analytics:", error);
+      return res.status(500).json({
+        status: "error",
+        message: "Failed to fetch admin analytics: " + error.message
+      });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

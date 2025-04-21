@@ -1688,6 +1688,24 @@ export class MemStorage implements IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  // Declare missing methods to avoid TypeScript errors
+  createUserFeedback!: (feedback: InsertUserFeedback) => Promise<UserFeedback>;
+  updateUserBetaFeedbackStatus!: (userId: number, status: boolean) => Promise<boolean>;
+  getUserFeedback!: (filter?: {userId?: number}) => Promise<UserFeedback[]>;
+  createErrorLog!: (errorLog: InsertErrorLog) => Promise<ErrorLog>;
+  updateUserOnboardingStatus!: (userId: number, status: boolean) => Promise<boolean>;
+  // User activity tracking methods
+  async createUserActivity(activityLog: InsertUserActivity): Promise<UserActivity> {
+    const [log] = await db.insert(userActivity).values(activityLog).returning();
+    return log;
+  }
+  
+  async getUserActivitiesLog(userId: number): Promise<UserActivity[]> {
+    return db.select()
+      .from(userActivity)
+      .where(eq(userActivity.userId, userId))
+      .orderBy(desc(userActivity.createdAt));
+  }
   public sessionStore: any;
 
   constructor() {
@@ -1699,6 +1717,175 @@ export class DatabaseStorage implements IStorage {
       createTableIfMissing: true,
       tableName: 'session'
     });
+  }
+  
+  // Admin dashboard methods
+  async createUserActivityLog(logData: InsertAdminUserLog): Promise<AdminUserLog> {
+    const [log] = await db.insert(userActivityLogs).values(logData).returning();
+    return log;
+  }
+
+  async getUserActivityLogs(filter?: {userId?: number, action?: string, startDate?: Date, endDate?: Date}): Promise<AdminUserLog[]> {
+    let query = db.select().from(userActivityLogs);
+    
+    if (filter) {
+      if (filter.userId) {
+        query = query.where(eq(userActivityLogs.userId, filter.userId));
+      }
+      if (filter.action) {
+        query = query.where(eq(userActivityLogs.action, filter.action));
+      }
+      if (filter.startDate) {
+        query = query.where(gte(userActivityLogs.createdAt, filter.startDate));
+      }
+      if (filter.endDate) {
+        query = query.where(lte(userActivityLogs.createdAt, filter.endDate));
+      }
+    }
+    
+    return query.orderBy(desc(userActivityLogs.createdAt));
+  }
+  
+  async getSystemStats(): Promise<SystemStat[]> {
+    return db.select().from(systemStats);
+  }
+  
+  async updateSystemStat(name: string, value: string, category: string): Promise<SystemStat> {
+    const existing = await db.select()
+      .from(systemStats)
+      .where(and(
+        eq(systemStats.name, name),
+        eq(systemStats.category, category)
+      ));
+      
+    if (existing.length > 0) {
+      const [updated] = await db.update(systemStats)
+        .set({ 
+          value, 
+          updatedAt: new Date() 
+        })
+        .where(eq(systemStats.id, existing[0].id))
+        .returning();
+      return updated;
+    }
+    
+    const [newStat] = await db.insert(systemStats)
+      .values({
+        name,
+        value,
+        category,
+        updatedAt: new Date()
+      })
+      .returning();
+    
+    return newStat;
+  }
+  
+  async getUserSignupStats(period: 'daily' | 'weekly' | 'monthly'): Promise<{date: string, count: number}[]> {
+    // Implementation depends on specific SQL functions available
+    // This is a simplified version
+    if (period === 'daily') {
+      const result = await db.execute(sql`
+        SELECT 
+          to_char(created_at, 'YYYY-MM-DD') as date,
+          count(*) as count
+        FROM users
+        WHERE created_at >= NOW() - INTERVAL '30 days'
+        GROUP BY to_char(created_at, 'YYYY-MM-DD')
+        ORDER BY date
+      `);
+      return result.rows as {date: string, count: number}[];
+    } else if (period === 'weekly') {
+      const result = await db.execute(sql`
+        SELECT 
+          to_char(date_trunc('week', created_at), 'YYYY-MM-DD') as date,
+          count(*) as count
+        FROM users
+        WHERE created_at >= NOW() - INTERVAL '12 weeks'
+        GROUP BY date_trunc('week', created_at)
+        ORDER BY date
+      `);
+      return result.rows as {date: string, count: number}[];
+    } else {
+      const result = await db.execute(sql`
+        SELECT 
+          to_char(date_trunc('month', created_at), 'YYYY-MM') as date,
+          count(*) as count
+        FROM users
+        WHERE created_at >= NOW() - INTERVAL '12 months'
+        GROUP BY date_trunc('month', created_at)
+        ORDER BY date
+      `);
+      return result.rows as {date: string, count: number}[];
+    }
+  }
+  
+  async getActiveUserStats(period: 'daily' | 'weekly' | 'monthly'): Promise<{date: string, count: number}[]> {
+    // Implementation using last_login field
+    if (period === 'daily') {
+      const result = await db.execute(sql`
+        SELECT 
+          to_char(last_login, 'YYYY-MM-DD') as date,
+          count(*) as count
+        FROM users
+        WHERE last_login >= NOW() - INTERVAL '30 days'
+        GROUP BY to_char(last_login, 'YYYY-MM-DD')
+        ORDER BY date
+      `);
+      return result.rows as {date: string, count: number}[];
+    } else if (period === 'weekly') {
+      const result = await db.execute(sql`
+        SELECT 
+          to_char(date_trunc('week', last_login), 'YYYY-MM-DD') as date,
+          count(*) as count
+        FROM users
+        WHERE last_login >= NOW() - INTERVAL '12 weeks'
+        GROUP BY date_trunc('week', last_login)
+        ORDER BY date
+      `);
+      return result.rows as {date: string, count: number}[];
+    } else {
+      const result = await db.execute(sql`
+        SELECT 
+          to_char(date_trunc('month', last_login), 'YYYY-MM') as date,
+          count(*) as count
+        FROM users
+        WHERE last_login >= NOW() - INTERVAL '12 months'
+        GROUP BY date_trunc('month', last_login)
+        ORDER BY date
+      `);
+      return result.rows as {date: string, count: number}[];
+    }
+  }
+  
+  async getUserCountByAccountType(): Promise<{accountType: string, count: number}[]> {
+    const result = await db.execute(sql`
+      SELECT 
+        COALESCE(account_type, 'individual') as account_type,
+        count(*) as count
+      FROM users
+      GROUP BY account_type
+      ORDER BY count DESC
+    `);
+    return result.rows.map(row => ({
+      accountType: row.account_type,
+      count: Number(row.count)
+    }));
+  }
+  
+  async getTotalCarbonReduction(): Promise<number> {
+    const result = await db.execute(sql`
+      SELECT SUM(carbon_amount) as total
+      FROM activities
+    `);
+    return Number(result.rows[0]?.total || 0);
+  }
+  
+  async getTopPerformingUsers(limit: number = 10): Promise<User[]> {
+    return db.select()
+      .from(users)
+      .orderBy(desc(users.score))
+      .limit(limit);
   }
 
   // User operations
