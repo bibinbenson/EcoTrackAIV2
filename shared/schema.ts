@@ -738,11 +738,44 @@ export const usersRelationsUpdated = relations(users, ({ many }) => ({
   activityLogs: many(userActivity)
 }));
 
+// Admin Analytics Models
+export const userActivityLogs = pgTable("user_activity_logs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  action: text("action").notNull(),
+  details: text("details"),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+export const insertUserActivityLogSchema = createInsertSchema(userActivityLogs).omit({
+  id: true,
+  createdAt: true
+});
+
+export const systemStats = pgTable("system_stats", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  value: text("value").notNull(),
+  category: text("category").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+export const insertSystemStatSchema = createInsertSchema(systemStats).omit({
+  id: true,
+  updatedAt: true
+});
+
 // Type exports
 export type User = typeof users.$inferSelect;
 export type CarbonReductionGoal = typeof carbonReductionGoals.$inferSelect;
 export type InsertCarbonReductionGoal = z.infer<typeof insertCarbonReductionGoalSchema>;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type AdminUserLog = typeof userActivityLogs.$inferSelect;
+export type InsertAdminUserLog = z.infer<typeof insertUserActivityLogSchema>;
+export type SystemStat = typeof systemStats.$inferSelect;
+export type InsertSystemStat = z.infer<typeof insertSystemStatSchema>;
 
 // Alias for more semantic type naming in the carbon API service
 export type CarbonActivity = typeof activities.$inferSelect;
@@ -796,8 +829,8 @@ export type InsertUserFeedback = z.infer<typeof insertUserFeedbackSchema>;
 export type ErrorLog = typeof errorLogs.$inferSelect;
 export type InsertErrorLog = z.infer<typeof insertErrorLogSchema>;
 
-export type UserActivityLog = typeof userActivity.$inferSelect;
-export type InsertUserActivityLog = z.infer<typeof insertUserActivitySchema>;
+export type UserActivity = typeof userActivity.$inferSelect;
+export type InsertUserActivity = z.infer<typeof insertUserActivitySchema>;
 
 // ESG Trading Platform types
 export type EsgCompany = typeof esgCompanies.$inferSelect;
